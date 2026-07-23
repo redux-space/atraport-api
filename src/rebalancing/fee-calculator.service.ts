@@ -7,7 +7,7 @@ export class FeeCalculatorService {
   constructor(private readonly planner: RebalancingPlannerService) {}
 
   estimateFees(request: FeeEstimateRequestDto): FeeEstimateResponseDto {
-    const strategy = this.planner['selectStrategy'](request.strategy, request.assets);
+    const strategy = this.planner.resolveStrategy(request.strategy, request.assets);
     const perAssetFees = request.assets.map((asset) => {
       const delta = asset.targetAmount - asset.currentAmount;
       const amount = Math.abs(delta);

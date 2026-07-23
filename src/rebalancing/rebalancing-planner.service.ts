@@ -9,7 +9,7 @@ import {
 @Injectable()
 export class RebalancingPlannerService {
   plan(request: RebalancingPlanRequestDto): RebalancingPlanResponseDto {
-    const strategy = this.selectStrategy(request.strategy, request.assets);
+    const strategy = this.resolveStrategy(request.strategy, request.assets);
     const trades = request.assets.map((asset) => this.buildTrade(asset, strategy));
 
     return {
@@ -39,7 +39,7 @@ export class RebalancingPlannerService {
     };
   }
 
-  private selectStrategy(strategy: string, assets: RebalancingAssetDto[]): string {
+  resolveStrategy(strategy: string, assets: RebalancingAssetDto[]): string {
     if (strategy === 'min-cost' || strategy === 'min-time' || strategy === 'balanced') {
       return strategy;
     }

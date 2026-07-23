@@ -57,7 +57,7 @@ export class MultiAssetRebalancingController {
       tradeSize: Number(tradeSize),
       tolerance: Number(tolerance),
       liquidity: Number(liquidity)
-    } as SlippageEstimateRequest);
+    } as SlippageEstimateRequestDto);
   }
 
   @Get('execution-log/:portfolioId')
