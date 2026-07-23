@@ -113,10 +113,14 @@ export class RebalancingService {
 
   estimateFees(request: FeeEstimateRequest): FeeEstimateResponse {
     const strategy = this.selectStrategy(request.strategy, request.assets);
-    const perAssetFees = request.assets.map((asset) => ({
-      symbol: asset.symbol,
-      fee: this.calculateTradeCost(asset, Math.max(asset.targetAmount - asset.currentAmount, 0), strategy)
-    }));
+    const perAssetFees = request.assets.map((asset) => {
+      const delta = asset.targetAmount - asset.currentAmount;
+      const amount = Math.abs(delta);
+      return {
+        symbol: asset.symbol,
+        fee: this.calculateTradeCost(asset, amount, strategy)
+      };
+    });
 
     const totalFee = perAssetFees.reduce((sum, entry) => sum + entry.fee, 0);
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
   FeeEstimateRequest,
   RebalancingPlanRequest,
@@ -42,8 +42,22 @@ export class MultiAssetRebalancingController {
   }
 
   @Get('slippage-estimate')
-  getSlippageEstimate(@Body() body: SlippageEstimateRequest) {
-    return this.rebalancingService.getSlippageEstimate(body);
+  getSlippageEstimate(
+    @Query('portfolioId') portfolioId: string,
+    @Query('strategy') strategy: string,
+    @Query('asset') asset: string,
+    @Query('tradeSize') tradeSize: string,
+    @Query('tolerance') tolerance: string,
+    @Query('liquidity') liquidity: string
+  ) {
+    return this.rebalancingService.getSlippageEstimate({
+      portfolioId,
+      strategy,
+      asset,
+      tradeSize: Number(tradeSize),
+      tolerance: Number(tolerance),
+      liquidity: Number(liquidity)
+    } as SlippageEstimateRequest);
   }
 
   @Get('execution-log/:portfolioId')
