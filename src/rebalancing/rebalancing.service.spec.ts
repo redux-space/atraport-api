@@ -1,10 +1,14 @@
+import { FeeCalculatorService } from './fee-calculator.service';
+import { RebalancingPlannerService } from './rebalancing-planner.service';
 import { RebalancingService } from './rebalancing.service';
 
 describe('RebalancingService', () => {
   let service: RebalancingService;
 
   beforeEach(() => {
-    service = new RebalancingService();
+    const planner = new RebalancingPlannerService();
+    const feeCalculator = new FeeCalculatorService(planner);
+    service = new RebalancingService(planner, feeCalculator);
   });
 
   it('generates a plan for multiple assets and recommends a strategy', () => {
