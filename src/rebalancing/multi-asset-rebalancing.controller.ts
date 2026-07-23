@@ -1,17 +1,17 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
-  FeeEstimateRequest,
-  RebalancingPlanRequest,
-  RebalancingService,
-  SlippageEstimateRequest
-} from './rebalancing.service';
+  FeeEstimateRequestDto,
+  RebalancingPlanRequestDto,
+  SlippageEstimateRequestDto
+} from './dto/rebalancing.dto';
+import { RebalancingService } from './rebalancing.service';
 
 @Controller('api/rebalancing')
 export class MultiAssetRebalancingController {
   constructor(private readonly rebalancingService: RebalancingService) {}
 
   @Post('plan')
-  plan(@Body() body: RebalancingPlanRequest) {
+  plan(@Body() body: RebalancingPlanRequestDto) {
     return this.rebalancingService.plan(body);
   }
 
@@ -27,12 +27,12 @@ export class MultiAssetRebalancingController {
   }
 
   @Post('estimate-fees')
-  estimateFees(@Body() body: FeeEstimateRequest) {
+  estimateFees(@Body() body: FeeEstimateRequestDto) {
     return this.rebalancingService.estimateFees(body);
   }
 
   @Post('execute')
-  execute(@Body() body: RebalancingPlanRequest) {
+  execute(@Body() body: RebalancingPlanRequestDto) {
     return this.rebalancingService.execute(body);
   }
 
@@ -66,7 +66,7 @@ export class MultiAssetRebalancingController {
   }
 
   @Post('dry-run')
-  dryRun(@Body() body: RebalancingPlanRequest) {
+  dryRun(@Body() body: RebalancingPlanRequestDto) {
     return this.rebalancingService.dryRun(body);
   }
 }
