@@ -5,11 +5,11 @@ import { AuthModule } from './auth/auth.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
 import { RiskModule } from './risk/risk.module';
 import { ContractsModule } from './contracts/contracts.module';
-import { StakingModule } from './staking/staking.module';
+import { SubscriptionModule } from './subscriptions/subscription.module';
 
 @Module({
-  imports: [AuthModule, PortfolioModule, RiskModule, ContractsModule, StakingModule],
+  imports: [AuthModule, PortfolioModule, RiskModule, ContractsModule, SubscriptionModule],
   controllers: [AppController],
-  providers: [AppService]
+  providers: [AppService],
 })
 export class AppModule {}
