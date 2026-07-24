@@ -28,6 +28,6 @@ import { EmergencyUnstake } from './staking/entities/emergency-unstake.entity';
     StakingModule
   ],
   controllers: [AppController],
-  providers: [AppService]
+  providers: [AppService],
 })
 export class AppModule {}
