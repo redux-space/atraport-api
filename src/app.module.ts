@@ -10,6 +10,6 @@ import { RebalancingModule } from './rebalancing/rebalancing.module';
 @Module({
   imports: [AuthModule, PortfolioModule, RiskModule, ContractsModule, RebalancingModule],
   controllers: [AppController],
-  providers: [AppService]
+  providers: [AppService],
 })
 export class AppModule {}
