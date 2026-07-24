@@ -17,3 +17,4 @@
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test", "examples"]
 }
+// Restarting the TypeScript language server
