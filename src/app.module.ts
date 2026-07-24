@@ -5,10 +5,10 @@ import { AuthModule } from './auth/auth.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
 import { RiskModule } from './risk/risk.module';
 import { ContractsModule } from './contracts/contracts.module';
-import { SubscriptionModule } from './subscriptions/subscription.module';
+import { RebalancingModule } from './rebalancing/rebalancing.module';
 
 @Module({
-  imports: [AuthModule, PortfolioModule, RiskModule, ContractsModule, SubscriptionModule],
+  imports: [AuthModule, PortfolioModule, RiskModule, ContractsModule, RebalancingModule],
   controllers: [AppController],
   providers: [AppService],
 })
