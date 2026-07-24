@@ -33,6 +33,6 @@ import { AuditLog } from './audit-log/audit-log.entity';
     AuditLogModule
   ],
   controllers: [AppController],
-  providers: [AppService]
+  providers: [AppService],
 })
 export class AppModule {}
