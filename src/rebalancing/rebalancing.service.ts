@@ -1,118 +1,90 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ExecutionHistory, NextExecutionResponse, RebalancingSchedule, RebalancingScheduleResponse, ValidationResult } from './dto/rebalancing.dto';
+import { Injectable } from '@nestjs/common';
+import {
+  FeeEstimateRequestDto,
+  RebalancingPlanRequestDto,
+  RebalancingPlanResponseDto,
+  SlippageEstimateRequestDto,
+  SlippageEstimateResponseDto,
+  TradeExecutionResultDto
+} from './dto/rebalancing.dto';
+import { FeeCalculatorService } from './fee-calculator.service';
+import { RebalancingPlannerService } from './rebalancing-planner.service';
 
 @Injectable()
-export class RebalancingScheduleService {
-  private schedules = new Map<string, RebalancingScheduleResponse>();
-  private executionHistory = new Map<string, ExecutionHistory[]>();
+export class RebalancingService {
+  private readonly history: TradeExecutionResultDto[] = [];
 
-  createSchedule(schedule: RebalancingSchedule): RebalancingScheduleResponse {
-    this.validateSchedule(schedule);
+  constructor(
+    private readonly planner: RebalancingPlannerService,
+    private readonly feeCalculator: FeeCalculatorService
+  ) {}
 
-    const now = new Date().toISOString();
-    const persisted: RebalancingScheduleResponse = {
-      id: `${schedule.portfolioId}-schedule`,
-      portfolioId: schedule.portfolioId,
-      enabled: schedule.enabled,
-      intervalMinutes: schedule.intervalMinutes,
-      startAt: schedule.startAt,
-      timezone: schedule.timezone,
-      createdAt: now,
-      updatedAt: now,
+  plan(request: RebalancingPlanRequestDto): RebalancingPlanResponseDto {
+    return this.planner.plan(request);
+  }
+
+  estimateFees(request: FeeEstimateRequestDto) {
+    return this.feeCalculator.estimateFees(request);
+  }
+
+  execute(request: RebalancingPlanRequestDto): TradeExecutionResultDto {
+    const plan = this.plan(request);
+    const totalFees = plan.trades.reduce((sum, trade) => sum + trade.cost, 0);
+    const slippageEvents = plan.trades.filter((trade) => trade.estimatedSlippage > request.tolerance).length;
+    const result: TradeExecutionResultDto = {
+      rebalanceId: plan.rebalanceId,
+      portfolioId: request.portfolioId,
+      strategy: plan.recommendedStrategy,
+      status: 'completed',
+      trades: plan.trades,
+      totalFees,
+      slippageEvents,
+      executedAt: new Date().toISOString()
     };
 
-    this.schedules.set(schedule.portfolioId, persisted);
-    this.executionHistory.set(schedule.portfolioId, []);
-    return persisted;
+    this.history.push(result);
+    return result;
   }
 
-  getSchedule(portfolioId: string): RebalancingScheduleResponse | undefined {
-    return this.schedules.get(portfolioId);
+  getTrades(rebalanceId: string) {
+    const found = this.history.find((entry) => entry.rebalanceId === rebalanceId);
+    return found ? found.trades : [];
   }
 
-  updateSchedule(portfolioId: string, update: Partial<RebalancingSchedule>): RebalancingScheduleResponse {
-    const existing = this.schedules.get(portfolioId);
-    if (!existing) {
-      throw new NotFoundException('Schedule not found');
-    }
-
-    const next = {
-      ...existing,
-      ...update,
-      portfolioId,
-      updatedAt: new Date().toISOString(),
-    };
-
-    this.validateSchedule(next);
-    this.schedules.set(portfolioId, next);
-    return next;
-  }
-
-  deleteSchedule(portfolioId: string): boolean {
-    const deleted = this.schedules.delete(portfolioId);
-    this.executionHistory.delete(portfolioId);
-    return deleted;
-  }
-
-  getExecutionHistory(portfolioId: string): ExecutionHistory[] {
-    return this.executionHistory.get(portfolioId) ?? [];
-  }
-
-  getNextExecution(portfolioId: string): NextExecutionResponse | undefined {
-    const schedule = this.schedules.get(portfolioId);
-    if (!schedule) {
-      return undefined;
-    }
-
-    const baseTime = new Date(schedule.startAt);
-    const nextTime = new Date(baseTime.getTime() + schedule.intervalMinutes * 60 * 1000);
-
+  getSlippageEstimate(request: SlippageEstimateRequestDto): SlippageEstimateResponseDto {
+    const estimate = this.estimateSlippage(request.liquidity, request.tradeSize);
+    const blocked = estimate > request.tolerance;
     return {
-      portfolioId,
-      nextExecutionAt: nextTime.toISOString(),
-      intervalMinutes: schedule.intervalMinutes,
+      portfolioId: request.portfolioId,
+      strategy: request.strategy,
+      asset: request.asset,
+      estimatedSlippage: estimate,
+      tolerance: request.tolerance,
+      blocked,
+      reason: blocked ? 'Projected slippage exceeds tolerance' : 'Slippage remains within tolerance'
     };
   }
 
-  executeNow(portfolioId: string, trigger: 'scheduled' | 'manual' = 'manual'): { success: boolean; history: ExecutionHistory[] } {
-    const schedule = this.schedules.get(portfolioId);
-    if (!schedule) {
-      throw new NotFoundException('Schedule not found');
-    }
-
-    const entry: ExecutionHistory = {
-      id: `${portfolioId}-${Date.now()}`,
-      portfolioId,
-      executedAt: new Date().toISOString(),
-      trigger,
-      status: 'success',
-      details: 'Rebalancing executed successfully',
-    };
-
-    const history = this.executionHistory.get(portfolioId) ?? [];
-    history.push(entry);
-    this.executionHistory.set(portfolioId, history);
-
-    return { success: true, history };
+  getExecutionLog(portfolioId: string): TradeExecutionResultDto[] {
+    return this.history.filter((entry) => entry.portfolioId === portfolioId);
   }
 
-  validateSchedule(schedule: Partial<RebalancingSchedule>): ValidationResult {
-    if (!schedule.portfolioId || !schedule.portfolioId.trim()) {
-      throw new BadRequestException('portfolioId is required');
-    }
+  dryRun(request: RebalancingPlanRequestDto): TradeExecutionResultDto {
+    const plan = this.plan(request);
+    return {
+      rebalanceId: plan.rebalanceId,
+      portfolioId: request.portfolioId,
+      strategy: plan.recommendedStrategy,
+      status: 'simulated',
+      trades: plan.trades,
+      totalFees: plan.trades.reduce((sum, trade) => sum + trade.cost, 0),
+      slippageEvents: plan.trades.filter((trade) => trade.estimatedSlippage > request.tolerance).length,
+      executedAt: new Date().toISOString()
+    };
+  }
 
-    if (typeof schedule.intervalMinutes !== 'number' || schedule.intervalMinutes <= 0) {
-      throw new BadRequestException('intervalMinutes must be a positive number');
-    }
-
-    if (!schedule.startAt) {
-      throw new BadRequestException('startAt is required');
-    }
-
-    if (!schedule.timezone || !schedule.timezone.trim()) {
-      throw new BadRequestException('timezone is required');
-    }
-
-    return { valid: true, message: 'Schedule is valid' };
+  private estimateSlippage(liquidity: number, amount: number): number {
+    const normalized = amount / Math.max(liquidity, 1);
+    return Number(Math.min(0.08, normalized * 0.01).toFixed(4));
   }
 }
