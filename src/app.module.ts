@@ -11,6 +11,7 @@ import { AIAnalysisModule } from "./ai-analysis/ai-analysis.module";
 import { WebhookModule } from "./webhook/webhook.module";
 import { AIModule } from "./ai/ai.module";
 import { RebalancingModule } from "./rebalancing/rebalancing.module";
+import { FilesModule } from "./files/files.module";
 import { SubscriptionModule } from "./subscriptions/subscription.module";
 import { AuditLogModule } from "./audit-log/audit-log.module";
 import { MonitoringModule } from "./monitoring/monitoring.module";
@@ -45,6 +46,7 @@ import { DocumentationModule } from "./docs/documentation.module";
     SubscriptionModule,
     AIModule,
     RebalancingModule,
+    FilesModule,
     SubscriptionModule,
     AuditLogModule,
     MonitoringModule,
