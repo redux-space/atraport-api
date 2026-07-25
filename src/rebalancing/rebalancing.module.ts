@@ -9,10 +9,11 @@ import { MinTimeStrategy } from './strategies/min-time.strategy';
 import { DriftDetectionController } from './drift-detection.controller';
 import { DriftCalculatorService } from './drift-calculator.service';
 import { WebhookModule } from '../webhook/webhook.module';
+import { RebalancingScheduleController } from './rebalancing.controller';
 
 @Module({
   imports: [WebhookModule],
-  controllers: [MultiAssetRebalancingController, DriftDetectionController],
+  controllers: [MultiAssetRebalancingController, DriftDetectionController, RebalancingScheduleController],
   providers: [
     RebalancingService,
     RebalancingPlannerService,

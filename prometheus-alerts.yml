@@ -1,0 +1,52 @@
+groups:
+  - name: astraport_api_alerts
+    rules:
+      - alert: AstraPortHighErrorRate
+        expr: (sum(rate(http_errors_total[5m])) / sum(rate(http_requests_total[5m]))) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+          service: astraport-api
+        annotations:
+          summary: "High HTTP error rate detected on AstraPort API"
+          description: "AstraPort API HTTP error rate is {{ $value }}%, exceeding the 5% threshold over 5 minutes."
+
+      - alert: AstraPortHighP95Latency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          service: astraport-api
+        annotations:
+          summary: "High 95th percentile latency on AstraPort API"
+          description: "AstraPort API p95 latency is {{ $value }}s, exceeding the 1.0s threshold."
+
+      - alert: AstraPortHighMemoryUsage
+        expr: (process_memory_heap_used_bytes / process_memory_heap_total_bytes) * 100 > 85
+        for: 3m
+        labels:
+          severity: warning
+          service: astraport-api
+        annotations:
+          summary: "AstraPort API process heap memory usage high"
+          description: "Heap memory usage is at {{ $value }}%, which exceeds the 85% limit."
+
+      - alert: AstraPortDatabaseDisconnected
+        expr: health_database_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: astraport-api
+        annotations:
+          summary: "Database connection lost"
+          description: "AstraPort API database connection check returned failure (status 0)."
+
+      - alert: AstraPortRebalancingFailuresSpike
+        expr: rate(astraport_rebalancing_executions_total{status="failed"}[10m]) > 0.5
+        for: 2m
+        labels:
+          severity: critical
+          service: astraport-api
+        annotations:
+          summary: "Spike in failed portfolio rebalancing executions"
+          description: "Rebalancing executions failure rate is {{ $value }} per minute."
