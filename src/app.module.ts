@@ -11,9 +11,13 @@ import { WebhookModule } from "./webhook/webhook.module";
 import { AIModule } from "./ai/ai.module";
 import { RebalancingModule } from "./rebalancing/rebalancing.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { LoggingModule } from "./logging/logging.module";
 
 @Module({
   imports: [
+    // LoggingModule MUST come first so the global logger + filter are ready
+    // before any other module's providers are initialised.
+    LoggingModule,
     TypeOrmModule.forRoot({
       type: "postgres",
       host: process.env.DB_HOST,
