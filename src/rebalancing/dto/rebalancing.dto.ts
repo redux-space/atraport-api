@@ -76,3 +76,37 @@ export class TradeExecutionResultDto {
   slippageEvents: number;
   executedAt: string;
 }
+
+// ─── Schedule-based rebalancing types ─────────────────────────────────────────
+
+export interface RebalancingSchedule {
+  portfolioId: string;
+  enabled: boolean;
+  intervalMinutes: number;
+  startAt?: string;
+  timezone?: string;
+}
+
+export interface RebalancingScheduleResponse extends RebalancingSchedule {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExecutionHistory {
+  id: string;
+  portfolioId: string;
+  executedAt: string;
+  trigger: string;
+  status: 'success' | 'failed';
+}
+
+export interface NextExecutionResponse {
+  portfolioId: string;
+  nextExecutionAt: string;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+}

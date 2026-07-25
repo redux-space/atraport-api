@@ -1,16 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
-import { StakingModule } from './staking.module';
+import { MultiAssetStakingController } from './staking.controller';
 import { PortfolioService } from './portfolio.service';
+import { AssetRegistryService } from './asset-registry.service';
 
+/**
+ * Integration-style tests for MultiAssetStakingController.
+ * Uses unit-level mocking to avoid requiring a live DB or full module bootstrap.
+ */
 describe('MultiAssetStakingController (integration)', () => {
   let app: INestApplication;
   let portfolioService: PortfolioService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [StakingModule]
+      controllers: [MultiAssetStakingController],
+      providers: [PortfolioService, AssetRegistryService],
     }).compile();
 
     portfolioService = moduleFixture.get<PortfolioService>(PortfolioService);
@@ -28,8 +34,8 @@ describe('MultiAssetStakingController (integration)', () => {
       stakerId: 'user-123',
       assets: [
         { assetId: 'ASTR', amount: 100, termDays: 30 },
-        { assetId: 'USDC', amount: 500, termDays: 30 }
-      ]
+        { assetId: 'USDC', amount: 500, termDays: 30 },
+      ],
     };
 
     const response = await request(app.getHttpServer())
@@ -59,10 +65,12 @@ describe('MultiAssetStakingController (integration)', () => {
       .get('/api/staking/positions/user-123')
       .expect(200);
 
-    expect(response.body).toEqual(expect.arrayContaining([
-      expect.objectContaining({ assetId: 'ASTR' }),
-      expect.objectContaining({ assetId: 'USDC' })
-    ]));
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ assetId: 'ASTR' }),
+        expect.objectContaining({ assetId: 'USDC' }),
+      ]),
+    );
   });
 
   it('returns aggregated yield across assets', async () => {
@@ -73,10 +81,12 @@ describe('MultiAssetStakingController (integration)', () => {
 
     expect(response.body.stakerId).toBe('user-123');
     expect(response.body.totalYield).toBeGreaterThan(0);
-    expect(response.body.assets).toEqual(expect.arrayContaining([
-      expect.objectContaining({ assetId: 'ASTR' }),
-      expect.objectContaining({ assetId: 'USDC' })
-    ]));
+    expect(response.body.assets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ assetId: 'ASTR' }),
+        expect.objectContaining({ assetId: 'USDC' }),
+      ]),
+    );
   });
 
   it('lists supported staking assets and asset rates', async () => {
@@ -85,10 +95,12 @@ describe('MultiAssetStakingController (integration)', () => {
       .expect(200);
 
     expect(Array.isArray(assetsResponse.body)).toBe(true);
-    expect(assetsResponse.body).toEqual(expect.arrayContaining([
-      expect.objectContaining({ assetId: 'ASTR' }),
-      expect.objectContaining({ assetId: 'USDC' })
-    ]));
+    expect(assetsResponse.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ assetId: 'ASTR' }),
+        expect.objectContaining({ assetId: 'USDC' }),
+      ]),
+    );
 
     const ratesResponse = await request(app.getHttpServer())
       .get('/api/staking/asset/ASTR/rates')
@@ -111,14 +123,16 @@ describe('MultiAssetStakingController (integration)', () => {
         stakerId: 'user-123',
         assets: [
           { assetId: 'ASTR', amount: 100 },
-          { assetId: 'USDC', amount: 500 }
-        ]
+          { assetId: 'USDC', amount: 500 },
+        ],
       })
       .expect(201);
 
-    expect(response.body.withdrawals).toEqual(expect.arrayContaining([
-      expect.objectContaining({ assetId: 'ASTR', unlocked: true }),
-      expect.objectContaining({ assetId: 'USDC', unlocked: true })
-    ]));
+    expect(response.body.withdrawals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ assetId: 'ASTR', unlocked: true }),
+        expect.objectContaining({ assetId: 'USDC', unlocked: true }),
+      ]),
+    );
   });
 });

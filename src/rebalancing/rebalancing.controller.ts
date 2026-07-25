@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { RebalancingScheduleService } from './rebalancing.service';
+import { RebalancingService as RebalancingScheduleService } from './rebalancing.service';
 import { ExecutionHistory, NextExecutionResponse, RebalancingSchedule, RebalancingScheduleResponse, ValidationResult } from './dto/rebalancing.dto';
 
 @Controller('api/rebalancing')
