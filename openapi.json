@@ -1,0 +1,211 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AstraPort API",
+    "version": "1.0.0",
+    "description": "Comprehensive API documentation for the AstraPort platform."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    { "name": "health", "description": "Health and status endpoints" },
+    { "name": "auth", "description": "Authentication and session endpoints" },
+    { "name": "portfolio", "description": "Portfolio operations" },
+    { "name": "risk", "description": "Risk analytics endpoints" },
+    { "name": "contracts", "description": "Contract management endpoints" },
+    { "name": "ai-triggers", "description": "AI trigger management" },
+    { "name": "ai-analysis", "description": "AI analysis and recommendations" },
+    { "name": "rebalancing", "description": "Portfolio rebalancing operations" },
+    { "name": "staking", "description": "Multi-asset staking operations" },
+    { "name": "subscriptions", "description": "Event subscriptions and delivery" },
+    { "name": "audit-logs", "description": "Audit log inspection and export" },
+    { "name": "general", "description": "General endpoints" }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["health"],
+        "summary": "GET ",
+        "description": "Retrieve the resource.",
+        "operationId": "get_",
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": { "status": "ok", "service": "AstraPort API" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/status": {
+      "get": {
+        "tags": ["auth"],
+        "summary": "GET /auth/status",
+        "description": "Retrieve the /auth/status resource.",
+        "operationId": "get_auth_status",
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": { "status": "ok", "service": "AstraPort API" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/portfolio/status": {
+      "get": {
+        "tags": ["portfolio"],
+        "summary": "GET /portfolio/status",
+        "description": "Retrieve the /portfolio/status resource.",
+        "operationId": "get_portfolio_status",
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "data": [] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/risk/status": {
+      "get": {
+        "tags": ["risk"],
+        "summary": "GET /risk/status",
+        "description": "Retrieve the /risk/status resource.",
+        "operationId": "get_risk_status",
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "data": [] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contracts/status": {
+      "get": {
+        "tags": ["contracts"],
+        "summary": "GET /contracts/status",
+        "description": "Retrieve the /contracts/status resource.",
+        "operationId": "get_contracts_status",
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "data": [] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai-triggers": {
+      "post": {
+        "tags": ["ai-triggers"],
+        "summary": "POST /api/ai-triggers",
+        "description": "Create or execute the /api/ai-triggers resource.",
+        "operationId": "post_api_ai_triggers",
+        "security": [{ "bearer": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "additionalProperties": true },
+              "example": { "success": true, "message": "Request accepted" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "message": "Request accepted" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rebalancing/schedule": {
+      "post": {
+        "tags": ["rebalancing"],
+        "summary": "POST /api/rebalancing/schedule",
+        "description": "Create or execute the /api/rebalancing/schedule resource.",
+        "operationId": "post_api_rebalancing_schedule",
+        "security": [{ "bearer": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "additionalProperties": true },
+              "example": { "success": true, "message": "Request accepted" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "message": "Request accepted" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/staking/portfolio": {
+      "get": {
+        "tags": ["staking"],
+        "summary": "GET /api/staking/portfolio",
+        "description": "Retrieve the /api/staking/portfolio resource.",
+        "operationId": "get_api_staking_portfolio",
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "data": [] }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [{ "bearer": [] }],
+  "x-api-version": "v1"
+}

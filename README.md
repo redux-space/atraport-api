@@ -50,32 +50,16 @@ Example payload:
 }
 ```
 
-# AstraPort API
+## API documentation
 
-AstraPort API is the backend service built with **NestJS**.  
-It exposes endpoints for portfolio analysis, risk scoring, and integration with Stellar smart contracts.
+- Swagger UI: http://localhost:3000/docs
+- ReDoc: http://localhost:3000/docs/redoc
+- OpenAPI spec: ./openapi.json
+- Generated SDK stub: ./generated-client.ts
 
-## Repo Structure
-- /docs        → API usage and endpoint documentation
-- /examples    → Example API calls and integrations
-- /src         → NestJS modules and services
+### Regenerate docs
 
-## Modules
-- Auth: JWT-based authentication
-- Portfolio: Endpoints for wallet and market data
-- Risk: Endpoints for risk scoring (from Core AI)
-- Contracts: Integration with Soroban smart contracts
-
-## Tech Stack
-- NestJS (TypeScript)
-- PostgreSQL
-- TypeORM
-- Stellar SDK
-
-## Getting Started
-1. Clone the repo
-2. Install dependencies: `npm install`
-3. Run the server: `npm run start:dev`
-
-## Examples
-See `/examples` for sample API requests and integrations.
+```bash
+npm run build
+npm run generate:docs
+```
