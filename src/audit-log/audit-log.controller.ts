@@ -1,30 +1,34 @@
 import { 
-  Controller, Get, Query, Param, ParseUUIDPipe, Res, Req, BadRequestException 
+  Controller, Get, Query, Param, ParseUUIDPipe, Res, BadRequestException, UseGuards
 } from '@nestjs/common';
-import { Response, Request } from 'express';
+import { Response } from 'express';
 import { AuditLogService } from './audit-log.service';
 import { AuditLogFilterDto } from './dto/audit-log-filter.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../auth/entities/user.entity';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @Controller('api/audit-logs')
+@UseGuards(RolesGuard)
+@Roles(UserRole.ADMIN)
 export class AuditLogController {
   constructor(private readonly auditLogService: AuditLogService) {}
 
   @Get()
   async getAuditLogs(
     @Query() filter: AuditLogFilterDto,
-    @Req() req: Request
+    @CurrentUser() user: { id: string },
   ) {
-    const userId = this.getUserIdFromRequest(req);
-    return this.auditLogService.findAll(filter, userId);
+    return this.auditLogService.findAll(filter, user.id);
   }
 
   @Get(':log_id')
   async getAuditLogById(
     @Param('log_id', ParseUUIDPipe) logId: string,
-    @Req() req: Request
+    @CurrentUser() user: { id: string },
   ) {
-    const userId = this.getUserIdFromRequest(req);
-    return this.auditLogService.findOne(logId, userId);
+    return this.auditLogService.findOne(logId, user.id);
   }
 
   @Get('export')
@@ -32,14 +36,13 @@ export class AuditLogController {
     @Query('format') format: 'json' | 'csv',
     @Query() filter: AuditLogFilterDto,
     @Res() res: Response,
-    @Req() req: Request
+    @CurrentUser() user: { id: string },
   ) {
     if (!['json', 'csv'].includes(format)) {
       throw new BadRequestException('Invalid format. Supported formats: json, csv');
     }
 
-    const userId = this.getUserIdFromRequest(req);
-    const exportResult = await this.auditLogService.export(format, filter, userId);
+    const exportResult = await this.auditLogService.export(format, filter, user.id);
 
     res.setHeader('Content-Type', exportResult.contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${exportResult.fileName}"`);
@@ -47,25 +50,12 @@ export class AuditLogController {
   }
 
   @Get('statistics')
-  async getStatistics(@Req() req: Request) {
-    const userId = this.getUserIdFromRequest(req);
-    return this.auditLogService.getStatistics(userId);
+  async getStatistics(@CurrentUser() user: { id: string }) {
+    return this.auditLogService.getStatistics(user.id);
   }
 
   @Get('verify-integrity')
-  async verifyIntegrity(@Req() req: Request) {
-    const userId = this.getUserIdFromRequest(req);
-    return this.auditLogService.verifyIntegrity(userId);
-  }
-
-  private getUserIdFromRequest(req: Request): string {
-    // In a real application, this would extract the user ID from the JWT token
-    // For example: return req.user?.id;
-    // This is a placeholder to demonstrate the security check
-    const userId = req.headers['x-user-id'] as string;
-    if (!userId) {
-      throw new BadRequestException('User ID not found in request. Authentication required.');
-    }
-    return userId;
+  async verifyIntegrity(@CurrentUser() user: { id: string }) {
+    return this.auditLogService.verifyIntegrity(user.id);
   }
 }
