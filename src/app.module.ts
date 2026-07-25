@@ -10,6 +10,7 @@ import { AIAnalysisModule } from "./ai-analysis/ai-analysis.module";
 import { WebhookModule } from "./webhook/webhook.module";
 import { AIModule } from "./ai/ai.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { DocumentationModule } from "./docs/documentation.module";
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
     AIAnalysisModule,
     WebhookModule,
     AIModule,
+    DocumentationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
