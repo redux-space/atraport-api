@@ -85,6 +85,23 @@ export class SubscriptionService {
     return results;
   }
 
+  listAllSubscriptions(): SubscriptionDto[] {
+    return [...this.subscriptions.values()].map((sub) => this.toDto(sub));
+  }
+
+  listActiveSubscriptions(): SubscriptionDto[] {
+    return this.listAllSubscriptions().filter((sub) => sub.active);
+  }
+
+  getSubscriptionById(subscriptionId: string): SubscriptionDto {
+    const entity = this.subscriptions.get(subscriptionId);
+    if (!entity) {
+      throw new NotFoundException(`Subscription ${subscriptionId} not found`);
+    }
+
+    return this.toDto(entity);
+  }
+
   getSubscription(userId: string, subscriptionId: string): SubscriptionDto {
     const entity = this.findOrThrow(userId, subscriptionId);
     return this.toDto(entity);
@@ -265,6 +282,10 @@ export class SubscriptionService {
     };
   }
 
+  listDeliveryRecords(): DeliveryRecordDto[] {
+    return [...this.deliveryRecords.values()].map(this.toDeliveryRecordDto);
+  }
+
   /**
    * Records a new delivery attempt for the given (subscription, event) pair.
    * If a record already exists it is updated with back-off timing.
@@ -379,6 +400,7 @@ export class SubscriptionService {
     return {
       id: record.id,
       eventId: record.eventId,
+      subscriptionId: record.subscriptionId,
       outcome: record.outcome,
       firstAttemptAt: record.firstAttemptAt ?? '',
       lastAttemptAt: record.lastAttemptAt ?? '',

@@ -19,6 +19,9 @@ export class DeliveryRecordDto {
   /** The event ID that was delivered. */
   eventId: string;
 
+  /** Subscription this delivery belongs to. */
+  subscriptionId?: string;
+
   /** Current outcome status. */
   outcome: DeliveryOutcome;
 
