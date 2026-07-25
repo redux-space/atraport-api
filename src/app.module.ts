@@ -9,6 +9,7 @@ import { AITriggersModule } from "./ai-triggers/ai-triggers.module";
 import { AIAnalysisModule } from "./ai-analysis/ai-analysis.module";
 import { WebhookModule } from "./webhook/webhook.module";
 import { AIModule } from "./ai/ai.module";
+import { RebalancingModule } from "./rebalancing/rebalancing.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 @Module({
@@ -31,6 +32,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
     AIAnalysisModule,
     WebhookModule,
     AIModule,
+    RebalancingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
