@@ -13,7 +13,9 @@ import { AIModule } from "./ai/ai.module";
 import { RebalancingModule } from "./rebalancing/rebalancing.module";
 import { MonitoringModule } from "./monitoring/monitoring.module";
 import { MetricsInterceptor } from "./monitoring/interceptors/metrics.interceptor";
+import { SubscriptionModule } from "./subscriptions/subscription.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { DocumentationModule } from "./docs/documentation.module";
 
 @Module({
   imports: [
@@ -34,6 +36,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
     AITriggersModule,
     AIAnalysisModule,
     WebhookModule,
+    SubscriptionModule,
     AIModule,
     RebalancingModule,
     MonitoringModule,

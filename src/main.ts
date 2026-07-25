@@ -14,12 +14,18 @@ async function bootstrap() {
     transform: true,
     forbidNonWhitelisted: true,
   }));
-  
+
   app.enableCors();
-  
+
+  const documentationService = app.get(DocumentationService);
+  await documentationService.setup(app);
+
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   await app.listen(port);
   logger.log(`AstraPort API listening on http://localhost:${port}`, 'Bootstrap');
+  console.log(`AstraPort API listening on http://localhost:${port}`);
+  console.log(`Swagger UI: http://localhost:${port}/docs`);
+  console.log(`ReDoc: http://localhost:${port}/docs/redoc`);
 }
 
 bootstrap();
