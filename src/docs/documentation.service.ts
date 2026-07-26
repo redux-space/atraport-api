@@ -8,6 +8,9 @@ export class DocumentationService {
   async setup(app: any) {
     const document = await buildOpenApiDocument(app);
 
+    const openApiPath = join(process.cwd(), 'openapi.json');
+    writeFileSync(openApiPath, JSON.stringify(document, null, 2));
+
     const sdkPath = join(process.cwd(), 'generated-client.ts');
     writeFileSync(sdkPath, this.renderClientSdk(document));
 

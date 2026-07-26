@@ -17,6 +17,87 @@ Run tests:
 npm test
 ```
 
+## Rate limiting
+
+All HTTP endpoints are protected by combined per-IP and per-user limits. Public
+requests use the IP policy; authenticated requests must satisfy both policies.
+Token-bucket and sliding-window algorithms are supported, and the most
+restrictive active policy is reported in:
+
+- `X-RateLimit-Limit`
+- `X-RateLimit-Remaining`
+- `X-RateLimit-Reset` (Unix timestamp in seconds)
+- `X-RateLimit-Scope`
+- `Retry-After` on rejected requests
+
+Rejected requests return HTTP `429` with code `RATE_LIMIT_EXCEEDED`. Metrics are
+included in `/metrics`, and administrators can retrieve the aggregate report at
+`GET /monitoring/rate-limits`.
+
+### Configuration
+
+| Variable | Default | Description |
+|---|---:|---|
+| `RATE_LIMIT_ENABLED` | `true` | Enables global rate limiting |
+| `RATE_LIMIT_FAIL_OPEN` | `true` | Allows requests if the limiter itself fails |
+| `RATE_LIMIT_IP_LIMIT` | `100` | Per-IP capacity |
+| `RATE_LIMIT_IP_WINDOW_MS` | `60000` | Per-IP refill/window duration |
+| `RATE_LIMIT_IP_ALGORITHM` | `token-bucket` | Per-IP algorithm |
+| `RATE_LIMIT_USER_LIMIT` | `300` | Per-user capacity |
+| `RATE_LIMIT_USER_WINDOW_MS` | `60000` | Per-user refill/window duration |
+| `RATE_LIMIT_USER_ALGORITHM` | `sliding-window` | Per-user algorithm |
+| `RATE_LIMIT_ENDPOINTS_JSON` | `{}` | Endpoint policy map (see below) |
+| `RATE_LIMIT_WHITELIST_IPS` | empty | Comma-separated trusted IPs |
+| `RATE_LIMIT_WHITELIST_USER_IDS` | empty | Comma-separated trusted user IDs |
+| `RATE_LIMIT_WHITELIST_API_KEYS` | empty | Comma-separated trusted API keys |
+| `RATE_LIMIT_TRUST_PROXY` | unset | Express proxy hop count or trusted subnet |
+
+Endpoint selectors may include an HTTP method and a trailing `*` wildcard:
+
+```bash
+RATE_LIMIT_ENDPOINTS_JSON='{
+  "POST /auth/login": {
+    "limit": 5,
+    "windowMs": 60000,
+    "algorithm": "sliding-window",
+    "scope": "ip"
+  },
+  "/ai/*": {
+    "limit": 20,
+    "windowMs": 60000,
+    "algorithm": "token-bucket",
+    "scope": "user"
+  }
+}'
+```
+
+Only set `RATE_LIMIT_TRUST_PROXY` when the API is behind a trusted proxy that
+removes client-supplied forwarding headers. A value of `1` is typical for one
+reverse-proxy hop.
+
+Individual controllers or handlers can override or skip the configured policy:
+
+```ts
+import { RateLimit, SkipRateLimit } from './rate-limit';
+
+@RateLimit({
+  limit: 10,
+  windowMs: 60_000,
+  algorithm: 'sliding-window',
+  scope: 'user',
+})
+@Post('expensive-operation')
+runExpensiveOperation() {}
+
+@SkipRateLimit()
+@Get('internal-probe')
+internalProbe() {}
+```
+
+The default store is process-local and prunes inactive clients automatically.
+For a horizontally scaled deployment, route a client consistently to one
+instance or replace the limiter store with a shared atomic backend.
+
 Build and run production image:
 
 ```bash

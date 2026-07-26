@@ -1,12 +1,13 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { AppLoggerService } from './logging/services/app-logger.service';
 import { ErrorTrackingService } from './logging/services/error-tracking.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     // Suppress NestJS's own bootstrap logs; our logger will take over
     bufferLogs: true,
   });
@@ -23,6 +24,17 @@ async function bootstrap() {
   }));
 
   app.enableCors();
+
+  // Express ignores forwarded client IP headers by default. Deployments behind a
+  // trusted proxy can opt in with a hop count (for example, "1") or subnet list.
+  const trustProxy = process.env.RATE_LIMIT_TRUST_PROXY;
+  if (trustProxy) {
+    const hopCount = Number(trustProxy);
+    app.set(
+      'trust proxy',
+      Number.isInteger(hopCount) && hopCount >= 0 ? hopCount : trustProxy,
+    );
+  }
 
   // ── Process-level safety nets ────────────────────────────────────────────────
   const errorTracking = app.get(ErrorTrackingService);

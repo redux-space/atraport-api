@@ -19,6 +19,7 @@ import { MetricsInterceptor } from "./monitoring/interceptors/metrics.intercepto
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { LoggingModule } from "./logging/logging.module";
 import { DocumentationModule } from "./docs/documentation.module";
+import { RateLimitModule } from "./rate-limit/rate-limit.module";
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { DocumentationModule } from "./docs/documentation.module";
     SubscriptionModule,
     AuditLogModule,
     MonitoringModule,
+    RateLimitModule,
   ],
   controllers: [AppController],
   providers: [

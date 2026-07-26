@@ -141,7 +141,7 @@ export class AlertingService implements OnModuleInit, OnModuleDestroy {
       const dbStatus = fullHealth.components.database?.status;
       if (dbStatus === 'down') {
         this.fireAlert(dbRule, 0, `Database connection status is DOWN: ${fullHealth.components.database?.error || 'Connection error'}`);
-      } else if (dbRule.state === 'firing' && dbStatus !== 'down') {
+      } else if (dbRule.state === 'firing') {
         this.resolveAlert(dbRule);
       }
     }
