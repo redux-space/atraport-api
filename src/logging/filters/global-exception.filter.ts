@@ -20,6 +20,7 @@ interface ErrorResponse {
   path: string;
   /** Only present for known business errors */
   code?: string;
+  retryAfter?: number;
 }
 
 /**
@@ -50,6 +51,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let statusCode: number;
     let message: string | string[];
     let code: string | undefined;
+    let retryAfter: number | undefined;
     let errorName: string;
 
     if (exception instanceof BaseAppError) {
@@ -67,7 +69,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         exceptionResponse !== null &&
         'message' in exceptionResponse
       ) {
-        message = (exceptionResponse as any).message;
+        const responseBody = exceptionResponse as {
+          message: string | string[];
+          code?: string;
+          retryAfter?: number;
+        };
+        message = responseBody.message;
+        code = responseBody.code;
+        retryAfter = responseBody.retryAfter;
       } else {
         message = exception.message;
       }
@@ -122,6 +131,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path,
       ...(code ? { code } : {}),
+      ...(retryAfter !== undefined ? { retryAfter } : {}),
     };
 
     res.status(statusCode).json(body);

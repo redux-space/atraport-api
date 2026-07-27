@@ -10,8 +10,22 @@ export class StructuredLogger implements LoggerService {
     this.writeLog('info', message, context, meta);
   }
 
-  error(message: any, trace?: string, context?: string, meta?: Record<string, any>) {
-    this.writeLog('error', message, context, { ...meta, stack: trace });
+  error(
+    message: any,
+    traceOrContext?: string,
+    contextOrMeta?: string | Record<string, any>,
+    meta?: Record<string, any>,
+  ) {
+    if (contextOrMeta && typeof contextOrMeta === 'object') {
+      this.writeLog('error', message, traceOrContext, contextOrMeta);
+      return;
+    }
+    const context =
+      typeof contextOrMeta === 'string' ? contextOrMeta : undefined;
+    this.writeLog('error', message, context, {
+      ...meta,
+      stack: traceOrContext,
+    });
   }
 
   warn(message: any, context?: string, meta?: Record<string, any>) {

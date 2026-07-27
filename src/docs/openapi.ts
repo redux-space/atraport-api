@@ -1,6 +1,3 @@
-import { writeFileSync } from 'fs';
-import { join } from 'path';
-
 interface OperationDefinition {
   method: string;
   path: string;
@@ -65,9 +62,6 @@ export async function buildOpenApiDocument(app: any) {
     security: [{ bearer: [] }],
     'x-api-version': 'v1',
   };
-
-  const outputPath = join(process.cwd(), 'openapi.json');
-  writeFileSync(outputPath, JSON.stringify(document, null, 2));
 
   return document;
 }

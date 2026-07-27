@@ -170,7 +170,7 @@ export class QueueService {
     for (const queue of queues) {
       const job = await queue.getJob(jobId);
       if (job) {
-        const logs = await job.logs();
+        const { logs } = await queue.getJobLogs(jobId);
         return logs.map((log) => ({
           timestamp: new Date(),
           message: log,
