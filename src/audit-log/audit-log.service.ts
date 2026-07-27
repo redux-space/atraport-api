@@ -11,6 +11,7 @@ import { CsvExporter } from './exporters/csv.exporter';
 import { LogIntegrityVerifier } from './integrity/log-integrity.verifier';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
+import { createOffsetPaginatedResponse } from '../pagination/helpers/pagination.helper';
 
 @Injectable()
 export class AuditLogService {
@@ -28,13 +29,7 @@ export class AuditLogService {
     
     const logDtos = logs.map(log => this.mapToDto(log));
     
-    return {
-      data: logDtos,
-      total,
-      page: filter.page,
-      limit: filter.limit,
-      totalPages: Math.ceil(total / (filter.limit || 10))
-    };
+    return createOffsetPaginatedResponse(logDtos, total, filter.page, filter.limit);
   }
 
   async findOne(logId: string, userId: string): Promise<AuditLogEntryDto> {
@@ -79,17 +74,10 @@ export class AuditLogService {
     const portfolios = new Set<string>();
 
     logs.forEach(log => {
-      // Count by event type
       logsByEventType[log.eventType] = (logsByEventType[log.eventType] || 0) + 1;
-      
-      // Count by user action
       logsByUserAction[log.userAction] = (logsByUserAction[log.userAction] || 0) + 1;
-      
-      // Count by day
       const day = log.createdAt.toISOString().split('T')[0];
       logsByDay[day] = (logsByDay[day] || 0) + 1;
-      
-      // Track unique portfolios
       if (log.portfolioId) {
         portfolios.add(log.portfolioId);
       }
@@ -108,7 +96,7 @@ export class AuditLogService {
       uniquePortfolios: portfolios.size
     };
 
-    await this.cacheManager.set(cacheKey, stats, 3600000); // 1 hour TTL
+    await this.cacheManager.set(cacheKey, stats, 3600000);
     return stats;
   }
 

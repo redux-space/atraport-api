@@ -1,11 +1,24 @@
-export class AuditLogFilterDto {
+import { IsOptional, IsString, IsDateString } from 'class-validator';
+import { PaginationQueryDto } from '../../pagination/dto/pagination-query.dto';
+
+export class AuditLogFilterDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsDateString()
   startDate?: Date;
+
+  @IsOptional()
+  @IsDateString()
   endDate?: Date;
+
+  @IsOptional()
+  @IsString()
   eventType?: string;
+
+  @IsOptional()
+  @IsString()
   portfolioId?: string;
+
+  @IsOptional()
+  @IsString()
   userAction?: string;
-  page?: number = 1;
-  limit?: number = 10;
-  sortBy?: string = 'createdAt';
-  sortOrder?: 'ASC' | 'DESC' = 'DESC';
 }

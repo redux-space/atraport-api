@@ -20,12 +20,14 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { LoggingModule } from "./logging/logging.module";
 import { DocumentationModule } from "./docs/documentation.module";
 import { RateLimitModule } from "./rate-limit/rate-limit.module";
+import { PaginationModule } from "./pagination/pagination.module";
 
 @Module({
   imports: [
     // LoggingModule MUST come first so the global logger + filter are ready
     // before any other module's providers are initialised.
     LoggingModule,
+    PaginationModule,
     TypeOrmModule.forRoot({
       type: "postgres",
       host: process.env.DB_HOST,

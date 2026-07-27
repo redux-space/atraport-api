@@ -10,8 +10,9 @@ import { SubscriptionDto } from './dto/subscription.dto';
 import { DeliveryOutcome, DeliveryRecordDto, DeliveryStatusDto } from './dto/delivery-status.dto';
 import { SubscriptionEntity } from './entities/subscription.entity';
 import { DeliveryRecordEntity } from './entities/delivery-record.entity';
+import { PaginationQueryDto } from '../pagination/dto/pagination-query.dto';
+import { createOffsetPaginatedResponse } from '../pagination/helpers/pagination.helper';
 
-/** Available event types exposed by GET /api/event-types */
 const AVAILABLE_EVENT_TYPES: string[] = [
   'portfolio.created',
   'portfolio.updated',
@@ -35,28 +36,13 @@ const SEVERITY_RANK: Record<EventSeverity, number> = {
   [EventSeverity.CRITICAL]: 3,
 };
 
-/** Base delay (ms) for exponential back-off retry. */
 const BASE_RETRY_DELAY_MS = 1_000;
-/** Maximum retry attempts before marking delivery as FAILED. */
 const MAX_RETRY_ATTEMPTS = 5;
 
-/**
- * SubscriptionService manages the full subscription lifecycle:
- *  - CRUD for subscription preferences (in-memory store, swappable with TypeORM repo)
- *  - Event filter validation and compilation
- *  - Delivery-record tracking per (subscription, event) pair
- *  - Exponential-back-off retry calculation
- *  - Acknowledgement processing
- */
 @Injectable()
 export class SubscriptionService {
-  /** In-memory store — replace with TypeORM repository injection in production. */
   private subscriptions = new Map<string, SubscriptionEntity>();
   private deliveryRecords = new Map<string, DeliveryRecordEntity>();
-
-  // ------------------------------------------------------------------
-  // CRUD
-  // ------------------------------------------------------------------
 
   createSubscription(userId: string, dto: CreateSubscriptionDto): SubscriptionDto {
     const entity: SubscriptionEntity = {
@@ -75,14 +61,32 @@ export class SubscriptionService {
     return this.toDto(entity);
   }
 
-  listSubscriptions(userId: string): SubscriptionDto[] {
-    const results: SubscriptionDto[] = [];
+  listSubscriptions(userId: string, pagination?: PaginationQueryDto) {
+    const allResults: SubscriptionDto[] = [];
     for (const sub of this.subscriptions.values()) {
       if (sub.userId === userId) {
-        results.push(this.toDto(sub));
+        allResults.push(this.toDto(sub));
       }
     }
-    return results;
+
+    if (!pagination) {
+      return { data: allResults, meta: { total: allResults.length, page: 1, limit: allResults.length, totalPages: 1, hasNext: false, hasPrevious: false } };
+    }
+
+    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC' } = pagination;
+
+    allResults.sort((a, b) => {
+      const aVal = (a as any)[sortBy] ?? '';
+      const bVal = (b as any)[sortBy] ?? '';
+      const cmp = String(aVal).localeCompare(String(bVal));
+      return sortOrder === 'ASC' ? cmp : -cmp;
+    });
+
+    const total = allResults.length;
+    const start = (page - 1) * limit;
+    const data = allResults.slice(start, start + limit);
+
+    return createOffsetPaginatedResponse(data, total, page, limit);
   }
 
   listAllSubscriptions(): SubscriptionDto[] {
@@ -129,7 +133,6 @@ export class SubscriptionService {
   deleteSubscription(userId: string, subscriptionId: string): void {
     this.findOrThrow(userId, subscriptionId);
     this.subscriptions.delete(subscriptionId);
-    // Cascade: remove related delivery records
     for (const [key, record] of this.deliveryRecords.entries()) {
       if (record.subscriptionId === subscriptionId) {
         this.deliveryRecords.delete(key);
@@ -137,22 +140,13 @@ export class SubscriptionService {
     }
   }
 
-  // ------------------------------------------------------------------
-  // Event types catalogue
-  // ------------------------------------------------------------------
-
   getEventTypes(): { eventTypes: string[] } {
     return { eventTypes: [...AVAILABLE_EVENT_TYPES] };
   }
 
-  // ------------------------------------------------------------------
-  // Filter validation & compilation
-  // ------------------------------------------------------------------
-
   validateFilter(filter: EventFilterDto): ValidateFilterResponseDto {
     const errors: string[] = [];
 
-    // eventTypes must be present and non-empty
     if (!filter.eventTypes || filter.eventTypes.length === 0) {
       errors.push('filter.eventTypes must contain at least one event type');
     } else {
@@ -164,7 +158,6 @@ export class SubscriptionService {
       }
     }
 
-    // minSeverity must be a valid enum value if supplied
     if (
       filter.minSeverity !== undefined &&
       !Object.values(EventSeverity).includes(filter.minSeverity)
@@ -182,7 +175,6 @@ export class SubscriptionService {
     return { valid: true, compiledSummary };
   }
 
-  /** Produces a human-readable description of the compiled filter. */
   private compileFilterSummary(filter: EventFilterDto): string {
     const parts: string[] = [];
     parts.push(`Event types: [${filter.eventTypes.join(', ')}]`);
@@ -201,26 +193,14 @@ export class SubscriptionService {
     return parts.join(' | ');
   }
 
-  // ------------------------------------------------------------------
-  // Event matching (used internally to decide which subscriptions receive
-  // a dispatched event)
-  // ------------------------------------------------------------------
-
-  /**
-   * Returns true when the given event payload matches the subscription filter.
-   * @param filter  - The subscription's event filter configuration.
-   * @param event   - The event metadata to test.
-   */
   matchesFilter(
     filter: EventFilterDto,
     event: { type: string; severity?: EventSeverity; metadata?: Record<string, string> },
   ): boolean {
-    // Must match one of the subscribed event types
     if (!filter.eventTypes.includes(event.type)) {
       return false;
     }
 
-    // Severity gate
     if (filter.minSeverity && event.severity) {
       const minRank = SEVERITY_RANK[filter.minSeverity];
       const eventRank = SEVERITY_RANK[event.severity];
@@ -229,7 +209,6 @@ export class SubscriptionService {
       }
     }
 
-    // Custom predicates must all match
     if (filter.customPredicates) {
       for (const [key, value] of Object.entries(filter.customPredicates)) {
         if (!event.metadata || event.metadata[key] !== value) {
@@ -241,10 +220,6 @@ export class SubscriptionService {
     return true;
   }
 
-  // ------------------------------------------------------------------
-  // Delivery tracking
-  // ------------------------------------------------------------------
-
   getDeliveryStatus(userId: string, subscriptionId: string): DeliveryStatusDto {
     this.findOrThrow(userId, subscriptionId);
 
@@ -255,7 +230,6 @@ export class SubscriptionService {
       }
     }
 
-    // Sort most recent first
     records.sort((a, b) => {
       const ta = a.lastAttemptAt ?? a.firstAttemptAt ?? '';
       const tb = b.lastAttemptAt ?? b.firstAttemptAt ?? '';
@@ -286,10 +260,6 @@ export class SubscriptionService {
     return [...this.deliveryRecords.values()].map(this.toDeliveryRecordDto);
   }
 
-  /**
-   * Records a new delivery attempt for the given (subscription, event) pair.
-   * If a record already exists it is updated with back-off timing.
-   */
   recordDeliveryAttempt(
     subscriptionId: string,
     eventId: string,
@@ -319,7 +289,6 @@ export class SubscriptionService {
       record.updatedAt = new Date();
     }
 
-    // Calculate next retry with exponential back-off if still failing
     if (outcome === DeliveryOutcome.RETRYING && record.attemptCount <= MAX_RETRY_ATTEMPTS) {
       const delayMs = BASE_RETRY_DELAY_MS * Math.pow(2, record.attemptCount - 1);
       record.nextRetryAt = new Date(Date.now() + delayMs).toISOString();
@@ -327,7 +296,6 @@ export class SubscriptionService {
       record.nextRetryAt = null;
     }
 
-    // Permanently fail after max retries
     if (outcome === DeliveryOutcome.RETRYING && record.attemptCount > MAX_RETRY_ATTEMPTS) {
       record.outcome = DeliveryOutcome.FAILED;
     }
@@ -335,10 +303,6 @@ export class SubscriptionService {
     this.deliveryRecords.set(key, record);
     return record;
   }
-
-  // ------------------------------------------------------------------
-  // Acknowledgement
-  // ------------------------------------------------------------------
 
   acknowledgeEvents(
     userId: string,
@@ -368,10 +332,6 @@ export class SubscriptionService {
 
     return { acknowledgedCount, skippedIds };
   }
-
-  // ------------------------------------------------------------------
-  // Helpers
-  // ------------------------------------------------------------------
 
   private findOrThrow(userId: string, subscriptionId: string): SubscriptionEntity {
     const entity = this.subscriptions.get(subscriptionId);

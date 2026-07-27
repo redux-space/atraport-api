@@ -61,8 +61,10 @@ describe('SubscriptionService – CRUD', () => {
     const listA = svc.listSubscriptions(USER_A);
     const listB = svc.listSubscriptions(USER_B);
 
-    expect(listA).toHaveLength(2);
-    expect(listB).toHaveLength(1);
+    expect(listA.data).toHaveLength(2);
+    expect(listA.meta.total).toBe(2);
+    expect(listB.data).toHaveLength(1);
+    expect(listB.meta.total).toBe(1);
   });
 
   it('updates only the supplied fields', () => {
@@ -94,8 +96,9 @@ describe('SubscriptionService – CRUD', () => {
     svc.deleteSubscription(USER_A, id);
 
     // Subscription gone
-    expect(() => svc.listSubscriptions(USER_A).find((s) => s.id === id)).not.toThrow();
-    expect(svc.listSubscriptions(USER_A)).toHaveLength(0);
+    const remaining = svc.listSubscriptions(USER_A);
+    expect(remaining.data.find((s) => s.id === id)).toBeUndefined();
+    expect(remaining.data).toHaveLength(0);
 
     // Delivery records cascade-deleted: re-creating sub with same id isn't
     // possible here, but we verify no stale records exist by re-checking
