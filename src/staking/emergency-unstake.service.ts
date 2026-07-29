@@ -9,15 +9,19 @@ import {
   PenaltyConfigDto 
 } from './dto/emergency-unstake.dto';
 import { ContractsService } from '../contracts/contracts.service';
+import { applyOffsetPagination, applySorting } from '../pagination/helpers/pagination-query-builder.helper';
+import { createOffsetPaginatedResponse } from '../pagination/helpers/pagination.helper';
 
 @Injectable()
 export class EmergencyUnstakeService {
   private penaltyConfig: PenaltyConfigDto = {
-    maxPenaltyRate: 0.25, // 25% maximum penalty
-    minPenaltyRate: 0.05, // 5% minimum penalty
+    maxPenaltyRate: 0.25,
+    minPenaltyRate: 0.05,
     rateLimitDays: 7,
     lockupPeriodDays: 180
   };
+
+  private readonly ALIAS = 'emergency_unstake';
 
   constructor(
     @InjectRepository(EmergencyUnstake)
@@ -36,7 +40,7 @@ export class EmergencyUnstakeService {
     const timeRemaining = unlock - now;
     
     if (timeRemaining <= 0) {
-      return 0; // No penalty if lockup has expired
+      return 0;
     }
 
     const timeRemainingRatio = timeRemaining / totalLockupPeriod;
@@ -159,36 +163,28 @@ export class EmergencyUnstakeService {
   }
 
   async getEmergencyHistory(stakerId: string, filters: EmergencyUnstakeHistoryFilterDto) {
-    const queryBuilder = this.emergencyUnstakeRepository.createQueryBuilder('emergency_unstake')
-      .where('emergency_unstake.stakerId = :stakerId', { stakerId });
+    const queryBuilder = this.emergencyUnstakeRepository.createQueryBuilder(this.ALIAS)
+      .where(`${this.ALIAS}.stakerId = :stakerId`, { stakerId });
 
     if (filters.status) {
-      queryBuilder.andWhere('emergency_unstake.status = :status', { status: filters.status });
+      queryBuilder.andWhere(`${this.ALIAS}.status = :status`, { status: filters.status });
     }
 
     if (filters.startDate) {
-      queryBuilder.andWhere('emergency_unstake.createdAt >= :startDate', { startDate: filters.startDate });
+      queryBuilder.andWhere(`${this.ALIAS}.createdAt >= :startDate`, { startDate: filters.startDate });
     }
 
     if (filters.endDate) {
-      queryBuilder.andWhere('emergency_unstake.createdAt <= :endDate', { endDate: filters.endDate });
+      queryBuilder.andWhere(`${this.ALIAS}.createdAt <= :endDate`, { endDate: filters.endDate });
     }
 
     const total = await queryBuilder.getCount();
-    const records = await queryBuilder
-      .orderBy('emergency_unstake.createdAt', 'DESC')
-      .skip((filters.page - 1) * filters.limit)
-      .take(filters.limit)
-      .getMany();
 
-    return {
-      data: records,
-      pagination: {
-        page: filters.page,
-        limit: filters.limit,
-        total,
-        pages: Math.ceil(total / filters.limit)
-      }
-    };
+    applySorting(queryBuilder, filters.sortBy, filters.sortOrder, this.ALIAS);
+    applyOffsetPagination(queryBuilder, filters.page, filters.limit);
+
+    const records = await queryBuilder.getMany();
+
+    return createOffsetPaginatedResponse(records, total, filters.page, filters.limit);
   }
 }

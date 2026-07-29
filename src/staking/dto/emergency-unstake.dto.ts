@@ -1,5 +1,6 @@
-import { IsString, IsNumber, IsUUID, IsOptional, Min, Max, IsDateString } from 'class-validator';
+import { IsString, IsNumber, IsOptional, Min, Max, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../pagination/dto/pagination-query.dto';
 
 export class InitiateEmergencyUnstakeDto {
   @IsString()
@@ -28,20 +29,7 @@ export class EmergencyUnstakePreviewDto {
   currentUnlockDate: Date;
 }
 
-export class EmergencyUnstakeHistoryFilterDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1)
-  page?: number = 1;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1)
-  @Max(100)
-  limit?: number = 10;
-
+export class EmergencyUnstakeHistoryFilterDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   status?: 'pending' | 'processed' | 'failed';

@@ -7,9 +7,12 @@ import {
   Body,
   Param,
   Headers,
+  Query,
 } from "@nestjs/common";
 import { AITriggersService } from "./ai-triggers.service";
 import { TriggerConfigDto } from "./dto/trigger-config.dto";
+import { PaginationQueryDto } from "../pagination/dto/pagination-query.dto";
+import { CursorPaginationQueryDto } from "../pagination/dto/cursor-pagination-query.dto";
 
 @Controller("api/ai-triggers")
 export class AITriggerController {
@@ -22,8 +25,13 @@ export class AITriggerController {
   }
 
   @Get()
-  listTriggers() {
-    return this.aiTriggersService.findAll();
+  listTriggers(@Query() pagination: PaginationQueryDto) {
+    return this.aiTriggersService.findAll(pagination);
+  }
+
+  @Get('cursor')
+  listTriggersCursor(@Query() pagination: CursorPaginationQueryDto) {
+    return this.aiTriggersService.findAllCursor(pagination);
   }
 
   @Put(":trigger_id")
