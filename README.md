@@ -98,6 +98,78 @@ The default store is process-local and prunes inactive clients automatically.
 For a horizontally scaled deployment, route a client consistently to one
 instance or replace the limiter store with a shared atomic backend.
 
+## Caching
+
+A multi-layer cache (in-memory L1 + optional Redis L2) lives in `src/cache/`.
+Lookups hit memory first, fall back to Redis, and populate the memory layer on
+a Redis hit. Redis failures are non-fatal: the memory layer keeps serving and a
+warning is logged once.
+
+### Usage
+
+Cache a service method by injecting `CacheService` as `cacheService` and adding
+`@Cached()` (keys are derived from class, method, and serialized arguments):
+
+```ts
+import { Injectable } from '@nestjs/common';
+import { CacheService, Cached, InvalidateCache } from '../cache';
+
+@Injectable()
+export class PortfolioService {
+  constructor(public cacheService: CacheService) {}
+
+  @Cached({ ttl: 30_000 })
+  async getSummary(id: string) {
+    // Expensive query; result is cached for 30s.
+  }
+
+  @InvalidateCache() // clears this class's cached entries on mutation
+  async refresh(id: string) {
+    // Write path; invalidates stale data.
+  }
+}
+```
+
+Opt an HTTP handler into conditional caching (ETag / Last-Modified):
+
+```ts
+import { ConditionalCache } from '../cache';
+
+@ConditionalCache({ maxAge: 30_000 })
+@Get('portfolio/summary')
+getSummary() {
+  return this.portfolioService.getSummary('main');
+}
+```
+
+Responses include `ETag` and `Last-Modified`; repeat requests with a matching
+`If-None-Match` receive `304 Not Modified`.
+
+Register warmup producers at startup with `cacheService.registerWarmup(key, producer, ttl?)`
+or define static warm keys via `CACHE_WARM_KEYS_JSON`. Warming runs in the
+background during bootstrap and on demand at `POST /monitoring/cache/warm`.
+
+### Configuration
+
+| Variable | Default | Description |
+|---|---:|---|
+| `CACHE_ENABLED` | `true` | Master switch for the cache layer |
+| `CACHE_DEFAULT_TTL_MS` | `60000` | Default TTL when none is provided |
+| `CACHE_MEMORY_MAX_KEYS` | `10000` | In-memory entry limit (LRU-ish eviction) |
+| `CACHE_REDIS_ENABLED` | `true` | Enables the Redis (L2) backend |
+| `CACHE_REDIS_HOST` | `127.0.0.1` | Redis host |
+| `CACHE_REDIS_PORT` | `6379` | Redis port |
+| `CACHE_REDIS_PASSWORD` | unset | Redis password |
+| `CACHE_REDIS_DB` | `0` | Redis logical database |
+| `CACHE_REDIS_PREFIX` | `astraport:cache:` | Key prefix for Redis entries |
+| `CACHE_WARM_ENABLED` | `true` | Enables cache warming |
+| `CACHE_WARM_ON_STARTUP` | `true` | Warms registered keys during bootstrap |
+| `CACHE_WARM_KEYS_JSON` | `{}` | Static warm keys, e.g. `{"config:limits":{"value":20,"ttl":60000}}` |
+
+Cache hit/miss/set/invalidation/warmup counters are exposed on `/metrics`, and
+administrators can inspect live statistics, trigger warming, or clear the cache
+at `GET/POST/DELETE /monitoring/cache`.
+
 Build and run production image:
 
 ```bash

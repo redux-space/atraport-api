@@ -21,6 +21,7 @@ import { LoggingModule } from "./logging/logging.module";
 import { DocumentationModule } from "./docs/documentation.module";
 import { RateLimitModule } from "./rate-limit/rate-limit.module";
 import { PaginationModule } from "./pagination/pagination.module";
+import { CacheModule } from "./cache/cache.module";
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { PaginationModule } from "./pagination/pagination.module";
     AuditLogModule,
     MonitoringModule,
     RateLimitModule,
+    CacheModule,
   ],
   controllers: [AppController],
   providers: [
