@@ -21,6 +21,8 @@ interface ErrorResponse {
   /** Only present for known business errors */
   code?: string;
   retryAfter?: number;
+  /** Field-level validation error details */
+  errors?: unknown[];
 }
 
 /**
@@ -53,12 +55,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let code: string | undefined;
     let retryAfter: number | undefined;
     let errorName: string;
+    let errors: unknown[] | undefined;
 
     if (exception instanceof BaseAppError) {
       statusCode = exception.statusCode;
       message = exception.message;
       code = exception.code;
       errorName = exception.name;
+      if ('errors' in exception && Array.isArray((exception as any).errors)) {
+        errors = (exception as any).errors;
+      }
     } else if (exception instanceof HttpException) {
       statusCode = exception.getStatus();
       const exceptionResponse = exception.getResponse();
@@ -73,14 +79,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           message: string | string[];
           code?: string;
           retryAfter?: number;
+          errors?: unknown[];
+          error?: string;
         };
         message = responseBody.message;
         code = responseBody.code;
         retryAfter = responseBody.retryAfter;
+        errors = responseBody.errors;
+        if (responseBody.error) {
+          errorName = responseBody.error;
+        }
       } else {
         message = exception.message;
       }
-      errorName = exception.name;
+      errorName = errorName || exception.name;
     } else {
       // Completely unexpected — 500
       statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -132,6 +144,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       path,
       ...(code ? { code } : {}),
       ...(retryAfter !== undefined ? { retryAfter } : {}),
+      ...(errors && errors.length > 0 ? { errors } : {}),
     };
 
     res.status(statusCode).json(body);
