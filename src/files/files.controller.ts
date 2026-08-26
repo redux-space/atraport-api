@@ -2,9 +2,10 @@ import { Controller, Post, Get, Delete, Param, UseInterceptors, UploadedFile, Re
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesService } from './services/files.service';
 import { Request } from 'express';
+import { FileValidationPipe } from '../validation';
 
 // Simulated auth extraction for this context
-const getUserId = (req: Request) => req.headers['x-user-id'] as string || 'test-user-id';
+const getUserId = (req: Request) => (req.headers['x-user-id'] as string) || 'test-user-id';
 
 @Controller('api/files')
 export class FilesController {
@@ -12,7 +13,17 @@ export class FilesController {
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
+  async uploadFile(
+    @UploadedFile(
+      new FileValidationPipe({
+        maxSize: '25MB',
+        validateMagicBytes: true,
+        required: true,
+      }),
+    )
+    file: Express.Multer.File,
+    @Req() req: Request,
+  ) {
     if (!file) throw new BadRequestException('No file provided');
     const userId = getUserId(req);
     const result = await this.filesService.uploadFile(userId, file.originalname, file.mimetype, file.buffer);
@@ -34,7 +45,13 @@ export class FilesController {
   @Post('upload/chunk')
   @UseInterceptors(FileInterceptor('chunk'))
   async uploadChunk(
-    @UploadedFile() chunk: Express.Multer.File,
+    @UploadedFile(
+      new FileValidationPipe({
+        maxSize: '15MB',
+        required: true,
+      }),
+    )
+    chunk: Express.Multer.File,
     @Req() req: Request,
     @Body('uploadId') uploadId: string,
     @Body('partNumber') partNumber: string

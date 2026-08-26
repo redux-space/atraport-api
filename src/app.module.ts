@@ -22,12 +22,14 @@ import { DocumentationModule } from "./docs/documentation.module";
 import { RateLimitModule } from "./rate-limit/rate-limit.module";
 import { PaginationModule } from "./pagination/pagination.module";
 import { CacheModule } from "./cache/cache.module";
+import { ValidationModule } from "./validation/validation.module";
 
 @Module({
   imports: [
     // LoggingModule MUST come first so the global logger + filter are ready
     // before any other module's providers are initialised.
     LoggingModule,
+    ValidationModule,
     PaginationModule,
     TypeOrmModule.forRoot({
       type: "postgres",
@@ -51,7 +53,6 @@ import { CacheModule } from "./cache/cache.module";
     AIModule,
     RebalancingModule,
     FilesModule,
-    SubscriptionModule,
     AuditLogModule,
     MonitoringModule,
     RateLimitModule,

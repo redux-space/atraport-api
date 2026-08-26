@@ -1,3 +1,5 @@
+import { ValidationSchemaRegistry, zodToOpenApiSchema } from '../validation';
+
 interface OperationDefinition {
   method: string;
   path: string;
@@ -19,6 +21,10 @@ export async function buildOpenApiDocument(app: any) {
     const description = getDescription(method, normalizedPath);
     const example = getExample(method, normalizedPath);
 
+    // Look for route schema in ValidationSchemaRegistry
+    const bodySchema = ValidationSchemaRegistry.getRouteSchema(method, normalizedPath, 'body');
+    const openApiBodySchema = bodySchema ? zodToOpenApiSchema(bodySchema) : undefined;
+
     paths[normalizedPath] = paths[normalizedPath] || {};
     paths[normalizedPath][method] = {
       tags: [tag],
@@ -35,10 +41,22 @@ export async function buildOpenApiDocument(app: any) {
             },
           },
         },
+        '400': {
+          description: 'Validation failed or bad request',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/ValidationErrorResponse',
+              },
+            },
+          },
+        },
       },
-      requestBody: getRequestBody(method, example),
+      requestBody: getRequestBody(method, example, openApiBodySchema),
     };
   }
+
+  const registeredSchemas = ValidationSchemaRegistry.getComponentsSchemas();
 
   const document = {
     openapi: '3.0.0',
@@ -57,6 +75,33 @@ export async function buildOpenApiDocument(app: any) {
           scheme: 'bearer',
           bearerFormat: 'JWT',
         },
+      },
+      schemas: {
+        ValidationErrorResponse: {
+          type: 'object',
+          properties: {
+            statusCode: { type: 'number', example: 400 },
+            error: { type: 'string', example: 'ValidationError' },
+            message: { type: 'string', example: 'Validation failed (2 errors)' },
+            code: { type: 'string', example: 'VALIDATION_ERROR' },
+            correlationId: { type: 'string', example: 'corr-123456' },
+            timestamp: { type: 'string', format: 'date-time' },
+            path: { type: 'string', example: '/api/resource' },
+            errors: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  field: { type: 'string', example: 'amount' },
+                  message: { type: 'string', example: 'Amount must be at least 0' },
+                  code: { type: 'string', example: 'too_small' },
+                  path: { type: 'array', items: { type: 'string' } },
+                },
+              },
+            },
+          },
+        },
+        ...registeredSchemas,
       },
     },
     security: [{ bearer: [] }],
@@ -156,13 +201,13 @@ function getExample(method: string, path: string) {
   return { success: true, data: [] };
 }
 
-function getRequestBody(method: string, example: any) {
+function getRequestBody(method: string, example: any, schemaOverride?: any) {
   if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
     return {
       required: true,
       content: {
         'application/json': {
-          schema: {
+          schema: schemaOverride || {
             type: 'object',
             additionalProperties: true,
           },
