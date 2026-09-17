@@ -10,7 +10,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDto, RefreshTokenDto, RegisterDto, RevokeTokenDto } from './dto/auth.dto';
+import {
+  LoginDto,
+  RefreshTokenDto,
+  RegisterDto,
+  RevokeTokenDto,
+  SocialLoginDto,
+} from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Public } from './decorators/public.decorator';
@@ -40,6 +46,13 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   login(@Request() req: { user: AuthUser }) {
     return this.authService.login(req.user);
+  }
+
+  @Public()
+  @Post('social-login')
+  @HttpCode(HttpStatus.OK)
+  socialLogin(@Body() dto: SocialLoginDto) {
+    return this.authService.socialLogin(dto);
   }
 
   @Public()
