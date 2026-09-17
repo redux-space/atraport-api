@@ -22,6 +22,19 @@ export class LoginDto {
   password: string;
 }
 
+export enum SocialProvider {
+  GOOGLE = 'google',
+}
+
+export class SocialLoginDto {
+  @IsEnum(SocialProvider)
+  provider: SocialProvider;
+
+  @IsString()
+  @MinLength(1)
+  idToken: string;
+}
+
 export class RefreshTokenDto {
   @IsString()
   userId: string;

@@ -20,6 +20,7 @@ export enum UserStatus {
 }
 
 @Entity({ name: 'users' })
+@Index(['socialProvider', 'socialProviderId'], { unique: true })
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -30,6 +31,12 @@ export class User {
 
   @Column({ select: false })
   passwordHash: string;
+
+  @Column({ name: 'social_provider', nullable: true })
+  socialProvider: string | null;
+
+  @Column({ name: 'social_provider_id', nullable: true })
+  socialProviderId: string | null;
 
   @Column({ default: UserRole.USER })
   role: UserRole;

@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { HashService } from './hash.service';
 import { TokenRevocationService } from './token-revocation.service';
 import { User, UserRole, UserStatus } from './entities/user.entity';
+import { SocialProvider } from './dto/auth.dto';
 import { RevokedToken } from './entities/revoked-token.entity';
 
 // ─── Mock helpers ─────────────────────────────────────────────────────────────
@@ -14,6 +15,8 @@ const mockUser = (): User => ({
   id: 'user-uuid-1',
   email: 'alice@example.com',
   passwordHash: '$2b$12$hashedpassword',
+  socialProvider: null,
+  socialProviderId: null,
   role: UserRole.USER,
   status: UserStatus.ACTIVE,
   refreshTokenHash: null,
@@ -263,6 +266,40 @@ describe('AuthService', () => {
       expect(result.refreshToken).toBeDefined();
       expect(typeof result.refreshToken).toBe('string');
       expect(result.refreshToken.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('socialLogin', () => {
+    it('should verify Google identity and return tokens for an existing user', async () => {
+      process.env.GOOGLE_CLIENT_ID = 'google-client-id';
+      const user = mockUser();
+      userRepo.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce(user);
+      userRepo.update.mockResolvedValue({ affected: 1 });
+      const verifyIdToken = jest
+        .spyOn((service as any).googleClient, 'verifyIdToken')
+        .mockResolvedValue({
+          getPayload: () => ({
+            sub: 'google-user-1',
+            email: user.email,
+            email_verified: true,
+          }),
+        });
+
+      const result = await service.socialLogin({
+        provider: SocialProvider.GOOGLE,
+        idToken: 'google-id-token',
+      });
+
+      expect(result.accessToken).toBe('signed-jwt-token');
+      expect(verifyIdToken).toHaveBeenCalledWith({
+        idToken: 'google-id-token',
+        audience: 'google-client-id',
+      });
+      expect(userRepo.update).toHaveBeenCalledWith(user.id, {
+        socialProvider: SocialProvider.GOOGLE,
+        socialProviderId: 'google-user-1',
+      });
+      delete process.env.GOOGLE_CLIENT_ID;
     });
   });
 
