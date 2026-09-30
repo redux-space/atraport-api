@@ -16,7 +16,7 @@ export class ZodValidationPipe implements PipeTransform {
     @Optional() private readonly options: ValidationOptions = {},
   ) {}
 
-  transform(value: unknown, metadata: ArgumentMetadata): unknown {
+  transform(value: unknown, _metadata?: ArgumentMetadata): unknown {
     const targetSchema = this.schema;
 
     if (!targetSchema) {
