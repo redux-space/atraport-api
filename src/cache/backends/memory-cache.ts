@@ -5,6 +5,14 @@ interface CacheEntry {
   expiresAt: number;
 }
 
+/**
+ * In-memory cache backend with true LRU eviction.
+ *
+ * The underlying `Map` preserves insertion order. On every `get()` hit the
+ * entry is re-inserted (delete + set) so the Map's iteration order always
+ * reflects recency of access. The eviction loop in `set()` therefore removes
+ * the least-recently-used key first.
+ */
 export class MemoryCacheBackend implements CacheBackend {
   readonly name = 'memory';
   private readonly store = new Map<string, CacheEntry>();
@@ -22,6 +30,10 @@ export class MemoryCacheBackend implements CacheBackend {
       this.store.delete(key);
       return undefined;
     }
+    // Refresh recency: re-insert to move to newest position in Map iteration order.
+    // This makes eviction true LRU — the least-recently-used key is evicted first.
+    this.store.delete(key);
+    this.store.set(key, entry);
     return entry.value as T;
   }
 

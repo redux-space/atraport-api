@@ -46,6 +46,19 @@ describe('MemoryCacheBackend', () => {
     await expect(small.get('c')).resolves.toBe(3);
   });
 
+  it('does not evict a recently-read key (true LRU)', async () => {
+    const small = new MemoryCacheBackend(2);
+    await small.set('hot', 1, 60_000);
+    await small.set('cold', 2, 60_000);
+    // Read 'hot' to refresh its recency
+    await expect(small.get('hot')).resolves.toBe(1);
+    // Insert a new key — should evict 'cold' (LRU), not 'hot'
+    await small.set('new', 3, 60_000);
+    await expect(small.get('hot')).resolves.toBe(1);
+    await expect(small.get('cold')).resolves.toBeUndefined();
+    await expect(small.get('new')).resolves.toBe(3);
+  });
+
   it('invalidates keys by prefix', async () => {
     await cache.set('users:1', 'a', 60_000);
     await cache.set('users:2', 'b', 60_000);

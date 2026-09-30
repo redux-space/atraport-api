@@ -155,7 +155,7 @@ background during bootstrap and on demand at `POST /monitoring/cache/warm`.
 |---|---:|---|
 | `CACHE_ENABLED` | `true` | Master switch for the cache layer |
 | `CACHE_DEFAULT_TTL_MS` | `60000` | Default TTL when none is provided |
-| `CACHE_MEMORY_MAX_KEYS` | `10000` | In-memory entry limit (LRU-ish eviction) |
+| `CACHE_MEMORY_MAX_KEYS` | `10000` | In-memory entry limit (least-recently-used eviction) |
 | `CACHE_REDIS_ENABLED` | `true` | Enables the Redis (L2) backend |
 | `CACHE_REDIS_HOST` | `127.0.0.1` | Redis host |
 | `CACHE_REDIS_PORT` | `6379` | Redis port |
