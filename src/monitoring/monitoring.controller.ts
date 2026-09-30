@@ -7,6 +7,7 @@ import {
   Header,
   Res,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { MetricsService } from './metrics.service';
 import { HealthService } from './health.service';
@@ -15,8 +16,19 @@ import { PerformanceService } from './performance.service';
 import { AlertingService } from './alerting.service';
 import { LogAggregationService } from './log-aggregation.service';
 import { LogQueryFilter } from './dto/monitoring.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
+import { UserRole } from '../auth/entities/user.entity';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
+/**
+ * Controller exposing system telemetry, metrics, alerts, and health probes.
+ * All administrative monitoring endpoints are restricted to ADMIN role via RolesGuard.
+ * Operational Kubernetes health probes (/health/liveness, /health/readiness) are explicitly marked @Public().
+ */
 @Controller()
+@UseGuards(RolesGuard)
+@Roles(UserRole.ADMIN)
 export class MonitoringController {
   constructor(
     private readonly metricsService: MetricsService,
@@ -38,11 +50,15 @@ export class MonitoringController {
     return this.healthService.getFullHealth();
   }
 
+  // Container orchestrators (e.g. Kubernetes) require unauthenticated access to the liveness probe
+  @Public()
   @Get('health/liveness')
   async getLiveness() {
     return this.healthService.getLiveness();
   }
 
+  // Container orchestrators require unauthenticated access to the readiness probe
+  @Public()
   @Get('health/readiness')
   async getReadiness() {
     return this.healthService.getReadiness();
