@@ -37,6 +37,22 @@ export class MemoryCacheBackend implements CacheBackend {
     return entry.value as T;
   }
 
+  async getWithTtl<T>(
+    key: string,
+  ): Promise<{ value: T; pttlMs: number } | undefined> {
+    const entry = this.store.get(key);
+    if (!entry) return undefined;
+    const pttlMs = entry.expiresAt - Date.now();
+    if (pttlMs <= 0) {
+      this.store.delete(key);
+      return undefined;
+    }
+    // Refresh recency on read
+    this.store.delete(key);
+    this.store.set(key, entry);
+    return { value: entry.value as T, pttlMs };
+  }
+
   async set<T>(key: string, value: T, ttlMs: number): Promise<void> {
     this.evictExpired();
     while (this.store.size >= this.maxKeys) {
