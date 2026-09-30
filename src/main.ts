@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { AppLoggerService } from './logging/services/app-logger.service';
 import { ErrorTrackingService } from './logging/services/error-tracking.service';
+import { DocumentationService } from './docs/documentation.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -24,6 +25,10 @@ async function bootstrap() {
   }));
 
   app.enableCors();
+
+  // Mount public API documentation routes (/docs, /docs/json, /docs/redoc)
+  const docsService = app.get(DocumentationService);
+  await docsService.setup(app);
 
   // Express ignores forwarded client IP headers by default. Deployments behind a
   // trusted proxy can opt in with a hop count (for example, "1") or subnet list.
