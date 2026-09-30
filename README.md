@@ -2,6 +2,47 @@
 
 Minimal scaffold for AstraPort API (NestJS)
 
+## Project status
+
+> **Maturity: this package is `0.1.0` — a pre-1.0 scaffold, not a finished
+> product.** The architecture and the cross-cutting infrastructure (auth, rate
+> limiting, caching, validation, observability) are the most complete parts;
+> the domain modules (portfolio, risk, contracts, AI) are earlier-stage
+> scaffolds. The table below is kept honest on purpose — update it when a
+> significant issue closes.
+
+| Module | Routes | Status | Notes |
+|---|---|---|---|
+| auth | `auth/*` | Partial | Works; open issues around secret fallback (#153), refresh expiry, client-supplied role (#152) |
+| rate limiting | `monitoring/rate-limits` + response headers | Partial | Per-IP + per-user policies work; key-growth issue open (#59) |
+| caching | `monitoring/cache` | Partial | Works; `MemoryCacheBackend` writes need an O(1) rework (#146) |
+| validation | — (pipe, no routes) | Partial | Two competing validation systems, direction undecided (#95) |
+| pagination | — (helpers, no routes) | Production-ready | Cursor helpers with unit tests (#68) |
+| files | `api/files` | Partial | Placeholder `x-user-id` auth (#155); storage defects (#154, #61, #147) |
+| monitoring | `/health`, `/metrics`, `monitoring/*` | Partial | `checkDisk` broken (#55), histogram/gauge issues (#53, #54); most `astraport_*` metrics never incremented (zero `.inc()` calls in `src/`) |
+| queue | — (unreachable) | Not wired up | `QueueModule` is never imported (#52); no worker runs |
+| documentation | `/docs` (404s) | Not wired up | Imported but never registered (#51) |
+| webhooks | `api/webhooks` | Partial | Works with a hardcoded default secret (#165) |
+| subscriptions | `api/*` | In progress | Thin scaffold, unverified — audit before use |
+| audit logging | `api/audit-logs` | In progress | Coverage planned (#78) |
+| rebalancing | `api/rebalancing` | Partial | Core calculations implemented but untested (#79, #97) |
+| staking | `api/staking` | Partial | Same state as rebalancing; contracts documented in #97 |
+| AI triggers | `api/ai-triggers` | In progress | Thin scaffold, unverified — audit before use |
+| AI analysis | `api/ai-analysis` | In progress | Thin scaffold, unverified — audit before use |
+| portfolio | `portfolio` | In progress | Service is 8 lines — scaffold |
+| risk | `risk` | In progress | Service is 8 lines — scaffold |
+| contracts | `contracts` | In progress | Service is 46 lines — scaffold |
+
+### Known limitations
+
+- Queue endpoints are unreachable — `QueueModule` is never imported ([#52](https://github.com/redux-space/atraport-api/issues/52)).
+- `/docs` returns 404 — `DocumentationModule` is imported but never registered ([#51](https://github.com/redux-space/atraport-api/issues/51)).
+- `scheduleJob` ignores cron expressions and enqueues immediately ([#164](https://github.com/redux-space/atraport-api/issues/164)).
+- The dead-letter queue is never fed and its processor only logs ([#50](https://github.com/redux-space/atraport-api/issues/50)).
+- High- and low-priority queues have no registered consumer ([#49](https://github.com/redux-space/atraport-api/issues/49)).
+- Files ownership comes from a client-supplied `x-user-id` header defaulting to `'test-user-id'` ([#155](https://github.com/redux-space/atraport-api/issues/155)).
+- Webhook signatures verify against a hardcoded development secret by default ([#165](https://github.com/redux-space/atraport-api/issues/165)).
+
 ## Getting started
 
 Install and run in development:
