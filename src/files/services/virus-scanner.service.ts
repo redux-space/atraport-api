@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as NodeClam from 'clamscan';
+import NodeClam from 'clamscan';
 
 @Injectable()
 export class VirusScannerService {
