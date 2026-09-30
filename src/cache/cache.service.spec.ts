@@ -2,6 +2,7 @@ import { MetricsService } from '../monitoring/metrics.service';
 import { Cached, InvalidateCache } from './cache.decorators';
 import { CacheService } from './cache.service';
 import { MemoryCacheBackend } from './backends/memory-cache';
+import { serializeArg } from './cache-key';
 
 const CACHE_ENV_KEYS = [
   'CACHE_ENABLED',
@@ -189,5 +190,43 @@ describe('cache decorators', () => {
     await portfolio.refresh();
     await portfolio.getSummary('a');
     expect(portfolio.calls).toBe(3);
+  });
+});
+
+describe('cache key serializer', () => {
+  it('produces different keys for different nested filters', () => {
+    const a = serializeArg({ filter: { status: 'A' } });
+    const b = serializeArg({ filter: { status: 'B' } });
+    expect(a).not.toBe(b);
+  });
+
+  it('produces different keys for different Date values', () => {
+    const a = serializeArg(new Date('2024-01-01'));
+    const b = serializeArg(new Date('2024-06-15'));
+    expect(a).not.toBe(b);
+  });
+
+  it('produces different keys for number 1 and string "1"', () => {
+    const num = serializeArg(1);
+    const str = serializeArg('1');
+    expect(num).not.toBe(str);
+  });
+
+  it('produces the same key regardless of object key order', () => {
+    const a = serializeArg({ x: 1, y: 2 });
+    const b = serializeArg({ y: 2, x: 1 });
+    expect(a).toBe(b);
+  });
+
+  it('produces different keys for different array order', () => {
+    const a = serializeArg([1, 2, 3]);
+    const b = serializeArg([3, 2, 1]);
+    expect(a).not.toBe(b);
+  });
+
+  it('does not throw on cyclic references', () => {
+    const cyclic: Record<string, unknown> = { name: 'test' };
+    cyclic.self = cyclic;
+    expect(() => serializeArg(cyclic)).not.toThrow();
   });
 });
