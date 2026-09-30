@@ -57,6 +57,9 @@ import { ValidationModule } from "./validation/validation.module";
     MonitoringModule,
     RateLimitModule,
     CacheModule,
+    // DocumentationModule MUST come last so all domain controllers are registered
+    // before the OpenAPI specification and documentation routes are built.
+    DocumentationModule,
   ],
   controllers: [AppController],
   providers: [
