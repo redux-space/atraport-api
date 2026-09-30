@@ -88,6 +88,34 @@ export class RedisCacheBackend implements CacheBackend {
     }
   }
 
+  async getWithTtl<T>(
+    key: string,
+  ): Promise<{ value: T; pttlMs: number } | undefined> {
+    if (!this.client || !this.online) return undefined;
+    try {
+      const raw = await this.client
+        .pipeline()
+        .get(this.prefix + key)
+        .pttl(this.prefix + key)
+        .exec();
+
+      if (!raw) return undefined;
+      const [getResult, pttlResult] = raw;
+      const [getErr, rawValue] = getResult;
+      const [pttlErr, pttlMs] = pttlResult;
+
+      if (getErr || pttlErr) return undefined;
+      if (rawValue === null || rawValue === undefined) return undefined;
+
+      // PTTL returns -2 if key doesn't exist, -1 if no expiry
+      const effectivePttl = typeof pttlMs === 'number' && pttlMs > 0 ? pttlMs : 0;
+
+      return { value: JSON.parse(rawValue as string) as T, pttlMs: effectivePttl };
+    } catch {
+      return undefined;
+    }
+  }
+
   async set<T>(key: string, value: T, ttlMs: number): Promise<void> {
     if (!this.client || !this.online) return;
     try {

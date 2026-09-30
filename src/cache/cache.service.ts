@@ -73,11 +73,14 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       return memoryValue;
     }
 
-    const redisValue = await this.redis.get<T>(key);
-    if (redisValue !== undefined) {
+    const redisResult = await this.redis.getWithTtl<T>(key);
+    if (redisResult !== undefined) {
       this.recordHit('redis');
-      await this.memory.set(key, redisValue, this.config.defaultTtlMs);
-      return redisValue;
+      // Promote into L1 with the remaining TTL from L2, not the default.
+      // This ensures entries with shorter TTLs don't outlive their freshness.
+      const promoteTtl = Math.max(1, redisResult.pttlMs);
+      await this.memory.set(key, redisResult.value, promoteTtl);
+      return redisResult.value;
     }
 
     this.recordMiss();

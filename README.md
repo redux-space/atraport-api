@@ -145,6 +145,10 @@ getSummary() {
 Responses include `ETag` and `Last-Modified`; repeat requests with a matching
 `If-None-Match` receive `304 Not Modified`.
 
+When a cache miss in L1 (memory) hits in L2 (Redis), the entry is promoted
+back into L1 with its **remaining TTL** from Redis — not the default TTL.
+This ensures entries with shorter TTLs don't outlive their intended freshness.
+
 Register warmup producers at startup with `cacheService.registerWarmup(key, producer, ttl?)`
 or define static warm keys via `CACHE_WARM_KEYS_JSON`. Warming runs in the
 background during bootstrap and on demand at `POST /monitoring/cache/warm`.
@@ -155,7 +159,7 @@ background during bootstrap and on demand at `POST /monitoring/cache/warm`.
 |---|---:|---|
 | `CACHE_ENABLED` | `true` | Master switch for the cache layer |
 | `CACHE_DEFAULT_TTL_MS` | `60000` | Default TTL when none is provided |
-| `CACHE_MEMORY_MAX_KEYS` | `10000` | In-memory entry limit (LRU-ish eviction) |
+| `CACHE_MEMORY_MAX_KEYS` | `10000` | In-memory entry limit (least-recently-used eviction) |
 | `CACHE_REDIS_ENABLED` | `true` | Enables the Redis (L2) backend |
 | `CACHE_REDIS_HOST` | `127.0.0.1` | Redis host |
 | `CACHE_REDIS_PORT` | `6379` | Redis port |

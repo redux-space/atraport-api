@@ -1,6 +1,7 @@
 import { SetMetadata } from '@nestjs/common';
 import { CacheService } from './cache.service';
 import { CacheDecoratorOptions, ConditionalCacheOptions } from './cache.types';
+import { serializeArg } from './cache-key';
 
 export const CONDITIONAL_CACHE_METADATA = 'cache:conditional';
 
@@ -11,19 +12,6 @@ export const CONDITIONAL_CACHE_METADATA = 'cache:conditional';
  */
 export const ConditionalCache = (options: ConditionalCacheOptions = {}) =>
   SetMetadata(CONDITIONAL_CACHE_METADATA, options);
-
-function serializeArg(arg: unknown): string {
-  if (arg === undefined) return 'undefined';
-  if (arg === null) return 'null';
-  if (typeof arg === 'object') {
-    try {
-      return JSON.stringify(arg, Object.keys(arg).sort());
-    } catch {
-      return String(arg);
-    }
-  }
-  return String(arg);
-}
 
 function cacheKey(
   className: string,

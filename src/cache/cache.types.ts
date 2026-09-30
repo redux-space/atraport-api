@@ -2,6 +2,7 @@ export interface CacheBackend {
   readonly name: string;
   readonly available: boolean;
   get<T>(key: string): Promise<T | undefined>;
+  getWithTtl<T>(key: string): Promise<{ value: T; pttlMs: number } | undefined>;
   set<T>(key: string, value: T, ttlMs: number): Promise<void>;
   del(key: string): Promise<void>;
   invalidateByPrefix(prefix: string): Promise<number>;

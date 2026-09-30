@@ -11,10 +11,11 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { CONDITIONAL_CACHE_METADATA } from './cache.decorators';
 import { ConditionalCacheOptions } from './cache.types';
+import { normalizeForSerialization } from './cache-key';
 
 function createETag(body: unknown): string {
   const hash = createHash('sha1');
-  hash.update(JSON.stringify(body));
+  hash.update(JSON.stringify(normalizeForSerialization(body)));
   return `"${hash.digest('hex')}"`;
 }
 
