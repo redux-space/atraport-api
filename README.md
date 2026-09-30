@@ -360,9 +360,12 @@ Example payload:
 
 ## API documentation
 
+Documentation routes are mounted directly on the HTTP adapter as public developer discovery endpoints (no bearer token required to view the interactive schema, while executing protected API operations requires a valid JWT):
+
 - Swagger UI: http://localhost:3000/docs
 - ReDoc: http://localhost:3000/docs/redoc
-- OpenAPI spec: ./openapi.json
+- Runtime OpenAPI JSON: http://localhost:3000/docs/json
+- OpenAPI spec artifact: ./openapi.json
 - Generated SDK stub: ./generated-client.ts
 
 ### Regenerate docs
