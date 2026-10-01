@@ -364,6 +364,8 @@ Example payload:
 - ReDoc: http://localhost:3000/docs/redoc
 - OpenAPI spec: ./openapi.json
 - Generated SDK stub: ./generated-client.ts
+- Files & Storage Module: [docs/files-module.md](docs/files-module.md)
+- Queue & Background Jobs Module: [docs/queue-module.md](docs/queue-module.md)
 
 ### Regenerate docs
 
