@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import * as crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 
@@ -39,14 +39,17 @@ interface DeliveryTransportResult {
   error?: string;
 }
 
-const DEFAULT_SECRET = "development-webhook-secret";
-
 @Injectable()
-export class WebhookService {
+export class WebhookService implements OnModuleInit {
   private readonly logger = new Logger(WebhookService.name);
   private readonly eventHistory: WebhookEvent[] = [];
 
   constructor(private readonly subscriptionService: SubscriptionService) {}
+
+  onModuleInit(): void {
+    // Fail fast at startup instead of signing with a publicly known secret.
+    this.getSecret();
+  }
 
   publishEvent(input: PublishEventInput): WebhookEvent {
     const event: WebhookEvent = {
@@ -238,8 +241,18 @@ export class WebhookService {
 
   private generateSignature(data: string): string {
     return crypto
-      .createHmac("sha256", process.env.WEBHOOK_SECRET ?? DEFAULT_SECRET)
+      .createHmac("sha256", this.getSecret())
       .update(data)
       .digest("hex");
+  }
+
+  private getSecret(): string {
+    const secret = process.env.WEBHOOK_SECRET;
+    if (!secret || !secret.trim()) {
+      throw new Error(
+        "WEBHOOK_SECRET is not set. Refusing to sign or verify webhook payloads without an explicit secret.",
+      );
+    }
+    return secret;
   }
 }

@@ -4,6 +4,20 @@ import { SubscriptionService } from "../subscriptions/subscription.service";
 import { WebhookService } from "./webhook.service";
 
 describe("WebhookService", () => {
+  const originalSecret = process.env.WEBHOOK_SECRET;
+
+  beforeEach(() => {
+    process.env.WEBHOOK_SECRET = "test-webhook-secret";
+  });
+
+  afterAll(() => {
+    if (originalSecret === undefined) {
+      delete process.env.WEBHOOK_SECRET;
+    } else {
+      process.env.WEBHOOK_SECRET = originalSecret;
+    }
+  });
+
   function makeServices() {
     const subscriptionService = new SubscriptionService();
     const webhookService = new WebhookService(subscriptionService);
@@ -18,6 +32,31 @@ describe("WebhookService", () => {
     expect(signature).toHaveLength(64);
     expect(webhookService.verifySignature(signature, payload)).toBe(true);
     expect(webhookService.verifySignature(signature, { type: "portfolio.deleted" })).toBe(false);
+  });
+
+  it("fails fast on startup when WEBHOOK_SECRET is not set", () => {
+    const { webhookService } = makeServices();
+    delete process.env.WEBHOOK_SECRET;
+
+    expect(() => webhookService.onModuleInit()).toThrow("WEBHOOK_SECRET");
+  });
+
+  it("refuses to sign or verify without a secret instead of using a default", () => {
+    const { webhookService } = makeServices();
+    const signature = webhookService.signPayload({ type: "portfolio.updated" });
+    delete process.env.WEBHOOK_SECRET;
+
+    expect(() => webhookService.signPayload({ type: "portfolio.updated" })).toThrow("WEBHOOK_SECRET");
+    expect(() => webhookService.verifySignature(signature, { type: "portfolio.updated" })).toThrow(
+      "WEBHOOK_SECRET",
+    );
+  });
+
+  it("treats a blank WEBHOOK_SECRET as unset", () => {
+    const { webhookService } = makeServices();
+    process.env.WEBHOOK_SECRET = "   ";
+
+    expect(() => webhookService.onModuleInit()).toThrow("WEBHOOK_SECRET");
   });
 
   it("publishes only to subscriptions whose filters match", async () => {
