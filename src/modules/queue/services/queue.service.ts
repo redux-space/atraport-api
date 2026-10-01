@@ -90,9 +90,8 @@ export class QueueService {
       metadata: options.metadata,
     };
 
-    // Add job with cron expression
-    // Note: Bull doesn't natively support cron, we'll use a separate scheduler
-    // For this implementation, we'll store the cron expression and use a cron job to trigger it
+    // Use a Bull repeatable job so the job runs at its cron expression
+    // instead of being enqueued immediately.
     const queue = this.getQueueForPriority(options.priority || JobPriority.MEDIUM);
 
     const bullJob = await queue.add(type, {
@@ -101,6 +100,7 @@ export class QueueService {
       cronExpression,
     }, {
       jobId,
+      repeat: { cron: cronExpression },
       priority: this.getBullPriority(options.priority || JobPriority.MEDIUM),
       attempts: options.maxRetries || 3,
       backoff: {
