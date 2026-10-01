@@ -1,18 +1,19 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { JobData, JobPriority, JobStatus, JobResult } from '../interfaces/job.interface';
 import { v4 as uuidv4 } from 'uuid';
+import { ConflictError, ResourceNotFoundError } from '../../../logging/errors/app.errors';
+import { AppLoggerService } from '../../../logging/services/app-logger.service';
 
 @Injectable()
 export class QueueService {
-  private readonly logger = new Logger(QueueService.name);
-
   constructor(
     @InjectQueue('default-queue') private defaultQueue: Queue,
     @InjectQueue('high-priority-queue') private highPriorityQueue: Queue,
     @InjectQueue('low-priority-queue') private lowPriorityQueue: Queue,
     @InjectQueue('dead-letter-queue') private deadLetterQueue: Queue,
+    private readonly logger: AppLoggerService,
   ) {}
 
   /**
@@ -152,13 +153,47 @@ export class QueueService {
     for (const queue of queues) {
       const job = await queue.getJob(jobId);
       if (job) {
-        await job.remove();
-        this.logger.log(`Job ${jobId} cancelled`);
-        return true;
+        // Check job state before attempting removal
+        const state = await job.getState();
+        if (state === 'active' || state === 'completed') {
+          throw new ConflictError(
+            state === 'active'
+              ? 'cannot cancel job that is currently being processed'
+              : 'cannot cancel job that has already completed',
+          );
+        }
+
+        // Attempt to remove the job
+        try {
+          await job.remove();
+          this.logger.log(`Job ${jobId} cancelled`);
+          return true;
+        } catch (error) {
+          // Log the original error message
+          if (error instanceof Error) {
+            this.logger.error(`Failed to cancel job ${jobId}: ${error.message}`);
+          } else {
+            this.logger.error(`Failed to cancel job ${jobId}: ${String(error)}`);
+          }
+
+          // Translate known Bull error messages to ConflictError (without including raw text).
+          // Bull's messages are not a stable API, so match case-insensitively.
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const normalized = errorMessage.toLowerCase();
+          if (
+            normalized.includes('locked by a worker') ||
+            normalized.includes('cannot remove completed job') ||
+            normalized.includes('already marked completed')
+          ) {
+            throw new ConflictError('cannot cancel job');
+          }
+          // Re-throw unknown errors
+          throw error;
+        }
       }
     }
 
-    return false;
+    throw new ResourceNotFoundError('Job', jobId);
   }
 
   /**
