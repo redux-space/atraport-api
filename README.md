@@ -371,3 +371,8 @@ Example payload:
 npm run build
 npm run generate:docs
 ```
+
+
+## Contributing
+
+Please check [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and development workflow.
