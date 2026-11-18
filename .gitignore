@@ -1,7 +1,6 @@
 node_modules/
 dist/
 env/
-.env
 .DS_Store
 coverage/
 *.log
@@ -73,8 +72,6 @@ web_modules/
 .yarn-integrity
 
 # dotenv environment variable files
-.env
-.env.*
 !.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
@@ -144,3 +141,4 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+config.bat
