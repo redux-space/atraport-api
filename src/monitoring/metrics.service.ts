@@ -208,6 +208,30 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Adds `amount` to a gauge, for values that track a live count such as requests in flight. */
+  public incrementGauge(name: string, labels: Record<string, string> = {}, amount = 1) {
+    const metric = this.metrics.get(name);
+    if (!metric) return;
+
+    const existing = this.findMetricValue(metric, labels);
+    if (existing) {
+      existing.value += amount;
+    } else {
+      metric.values.push({ labels: { ...labels }, value: amount });
+    }
+  }
+
+  /** Subtracts `amount` from a gauge. The value never goes below zero. */
+  public decrementGauge(name: string, labels: Record<string, string> = {}, amount = 1) {
+    const metric = this.metrics.get(name);
+    if (!metric) return;
+
+    const existing = this.findMetricValue(metric, labels);
+    if (existing) {
+      existing.value = Math.max(0, existing.value - amount);
+    }
+  }
+
   public recordObserveHistogram(name: string, valueInSeconds: number, labels: Record<string, string> = {}) {
     const metric = this.metrics.get(name);
     if (!metric) return;

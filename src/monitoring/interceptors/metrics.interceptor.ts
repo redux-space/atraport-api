@@ -6,7 +6,7 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { Observable, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, finalize } from 'rxjs/operators';
 import { MetricsService } from '../metrics.service';
 import { TracingService } from '../tracing.service';
 import { PerformanceService } from '../performance.service';
@@ -61,7 +61,7 @@ export class MetricsInterceptor implements NestInterceptor {
     request.spanId = span.spanId;
 
     // 2. Metrics & Performance Counters
-    this.metricsService.setGauge('http_requests_in_flight', 1, { method, path });
+    this.metricsService.incrementGauge('http_requests_in_flight', { method, path });
     this.performanceService.incrementActiveRequests();
     const startTime = Date.now();
 
@@ -77,7 +77,6 @@ export class MetricsInterceptor implements NestInterceptor {
         // Update Metrics
         this.metricsService.incrementCounter('http_requests_total', { method, path, status: String(statusCode) });
         this.metricsService.recordObserveHistogram('http_request_duration_seconds', durationSeconds, { method, path });
-        this.metricsService.setGauge('http_requests_in_flight', 0, { method, path });
         this.performanceService.decrementActiveRequests();
 
         if (statusCode >= 400) {
@@ -112,7 +111,6 @@ export class MetricsInterceptor implements NestInterceptor {
         this.metricsService.incrementCounter('http_requests_total', { method, path, status: String(statusCode) });
         this.metricsService.incrementCounter('http_errors_total', { method, path, status: String(statusCode) });
         this.metricsService.recordObserveHistogram('http_request_duration_seconds', durationSeconds, { method, path });
-        this.metricsService.setGauge('http_requests_in_flight', 0, { method, path });
         this.performanceService.decrementActiveRequests();
 
         // Record APM
@@ -128,6 +126,11 @@ export class MetricsInterceptor implements NestInterceptor {
         });
 
         return throwError(() => error);
+      }),
+      // Runs once per request on success, error and client abort, so the gauge
+      // always goes back down by exactly the amount it went up.
+      finalize(() => {
+        this.metricsService.decrementGauge('http_requests_in_flight', { method, path });
       }),
     );
   }
